@@ -14,9 +14,22 @@ const signup = asyncHandler(async (req, res) => {
     })
 })
 
+const login = asyncHandler(async (req, res) => {
+    const { token, user } = await authService.login(req.body)
+
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    })
+
+    res.status(200).json({ user })
+})
+
 module.exports = {
     signup,
-    login: notImplemented,
+    login,
     logout: notImplemented,
     me: notImplemented,
 };

@@ -18,4 +18,18 @@ const validateSignup = (req, res, next) => {
     next();
 }
 
-module.exports = { validateSignup }
+const validateLogin = (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || typeof email !== "string") {
+    return next(new AppError("Email is required", 400, "VALIDATION_ERROR"));
+  }
+
+  if (!password || typeof password !== "string") {
+    return next(new AppError("Password is required", 400, "VALIDATION_ERROR"));
+  }
+
+  next();
+};
+
+module.exports = { validateSignup, validateLogin };
