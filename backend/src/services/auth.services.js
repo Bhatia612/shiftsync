@@ -52,4 +52,16 @@ const login = async ({ email, password }) => {
 
 }
 
-module.exports = { signup, login }
+const getMe = async (userId) => {
+    const membership = await prisma.membership.findFirst({
+        where: { userId },
+        select: { teamId: true, role: true },
+    });
+
+    return membership || null;
+};
+
+module.exports = { signup, login, getMe };
+
+
+module.exports = { signup, login, getMe }

@@ -1,12 +1,6 @@
 const asyncHandler = require("../utils/asyncHandler")
 const authService = require("../services/auth.services")
 
-const notImplemented = (req, res) => {
-    res.status(501).json({
-        error: { message: "Not implemented yet", code: "NOT_IMPLEMENTED" }
-    })
-}
-
 const signup = asyncHandler(async (req, res) => {
     const user = await authService.signup(req.body)
     res.status(201).json({
@@ -27,9 +21,19 @@ const login = asyncHandler(async (req, res) => {
     res.status(200).json({ user })
 })
 
+const logout = asyncHandler(async (req, res) => {
+    res.clearCookie("token")
+    res.status(200).json({ message: "Logged out" })
+})
+
+const me = asyncHandler(async (req, res) => {
+    const membership = await authService.getMe(req.user.id)
+    res.status(200).json({ user: req.user, membership })
+})
+
 module.exports = {
     signup,
     login,
-    logout: notImplemented,
-    me: notImplemented,
+    logout,
+    me,
 };
