@@ -26,8 +26,5 @@ Thumbs.db
 .idea/
 *.swp
 
-# Prisma (generated client, not the schema)
-backend/prisma/migrations/dev.db
-
 # Vite cache (frontend, once it exists)
 frontend/.vite/

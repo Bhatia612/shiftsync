@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  MANAGER
+  EMPLOYEE
+}
+
+enum SwapStatus {
+  PENDING_EMPLOYEE
+  PENDING_MANAGER
+  APPROVED
+  DENIED
+  CANCELLED
+}
+
+enum NotificationType {
+  SWAP_REQUESTED
+  SWAP_ACCEPTED
+  SWAP_DENIED
+  SWAP_APPROVED
+  SWAP_CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships     Membership[]
+  assignedShifts  Shift[]
+  initiatedSwaps  SwapRequest[]   @relation("Initiator")
+  targetedSwaps   SwapRequest[]   @relation("Target")
+  notifications   Notification[]
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  memberships Membership[]
+  shifts      Shift[]
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  userId    String
+  teamId    String
+  role      Role
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId])
+}
+
+model Shift {
+  id             String   @id @default(uuid())
+  teamId         String
+  startTime      DateTime
+  endTime        DateTime
+  assignedUserId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  team         Team  @relation(fields: [teamId], references: [id])
+  assignedUser User? @relation(fields: [assignedUserId], references: [id])
+
+  swapRequestsAsShift        SwapRequest[] @relation("ShiftRelation")
+  swapRequestsAsCounterShift SwapRequest[] @relation("CounterShiftRelation")
+
+  @@index([assignedUserId, startTime, endTime])
+}
+
+model SwapRequest {
+  id              String     @id @default(uuid())
+  initiatorUserId String
+  shiftId         String
+  targetUserId    String
+  counterShiftId  String?
+  status          SwapStatus @default(PENDING_EMPLOYEE)
+  createdAt       DateTime   @default(now())
+  respondedAt     DateTime?
+  resolvedAt      DateTime?
+
+  initiator    User   @relation("Initiator", fields: [initiatorUserId], references: [id])
+  target       User   @relation("Target", fields: [targetUserId], references: [id])
+  shift        Shift  @relation("ShiftRelation", fields: [shiftId], references: [id])
+  counterShift Shift? @relation("CounterShiftRelation", fields: [counterShiftId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  payload   Json
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
