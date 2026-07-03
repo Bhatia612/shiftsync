@@ -4,10 +4,14 @@
   "description": "ShiftSync API — team scheduling and shift-swap platform",
   "main": "server.js",
   "scripts": {
-    "dev": "node --watch server.js",
+    "dev": "nodemon server.js",
     "start": "node server.js"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^4.22.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
