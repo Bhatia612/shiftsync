@@ -1,162 +1,589 @@
 # ShiftSync API Contract
 
-All routes are versioned and prefixed with `/api/v1`. Auth uses JWT stored in an httpOnly cookie — no tokens in request/response bodies.
+Version: v1
+Base URL: `/api/v1`
+Content-Type: `application/json`
 
-**Roles:** `manager` | `employee` — scoped per-team via `Membership`, not global on `User`.
+## Authentication
 
----
+Session-based via JWT in an httpOnly cookie named `token`. Set on login, cleared on logout. Endpoints marked **Auth: required** return `401 UNAUTHENTICATED` without a valid session.
 
-## Auth
+## Roles
 
-### POST `/api/v1/auth/signup`
-**Body:** `{ "name": string, "email": string, "password": string }`
-**Response 201:** `{ "user": { "id", "name", "email" } }`
-**Errors:** `400` validation, `409` email already exists
+`MANAGER` | `EMPLOYEE` — scoped per team via Membership. v1 restricts each user to one team.
 
-### POST `/api/v1/auth/login`
-**Body:** `{ "email": string, "password": string }`
-**Response 200:** `{ "user": { "id", "name", "email" } }` — sets httpOnly JWT cookie
-**Errors:** `401` invalid credentials
+## Error Format
 
-### POST `/api/v1/auth/logout`
-**Response 200:** `{ "message": "Logged out" }` — clears cookie
-
-### GET `/api/v1/auth/me`
-**Auth:** required
-**Response 200:** `{ "user": { "id", "name", "email" }, "membership": { "teamId", "role" } | null }`
-**Errors:** `401` not authenticated
-
----
-
-## Teams & Membership
-
-### POST `/api/v1/teams`
-**Auth:** required (creator becomes `manager`)
-**Body:** `{ "name": string }`
-**Response 201:** `{ "team": { "id", "name" } }`
-
-### GET `/api/v1/teams/:teamId`
-**Auth:** member of team
-**Response 200:** `{ "team": { "id", "name", "createdAt" } }`
-**Errors:** `403` not a member, `404` team not found
-
-### GET `/api/v1/teams/:teamId/members`
-**Auth:** member of team
-**Response 200:** `{ "members": [{ "userId", "name", "email", "role" }] }`
-
-### POST `/api/v1/teams/:teamId/members`
-**Auth:** manager of team
-**Body:** `{ "email": string, "role": "manager" | "employee" }`
-**Response 201:** `{ "membership": { "userId", "teamId", "role" } }`
-**Errors:** `403` not a manager, `404` user not found, `409` user already has a membership elsewhere (v1 rule)
-
-### PATCH `/api/v1/teams/:teamId/members/:userId`
-**Auth:** manager of team
-**Body:** `{ "role": "manager" | "employee" }`
-**Response 200:** `{ "membership": { "userId", "teamId", "role" } }`
-
-### DELETE `/api/v1/teams/:teamId/members/:userId`
-**Auth:** manager of team
-**Response 204**
-
----
-
-## Shifts
-
-### POST `/api/v1/teams/:teamId/shifts`
-**Auth:** manager of team
-**Body:** `{ "date": string, "startTime": string, "endTime": string, "assignedUserId": string | null }`
-**Response 201:** `{ "shift": { "id", "teamId", "date", "startTime", "endTime", "assignedUserId" } }`
-**Errors:** `409` overlap — assignedUserId already has a shift in this time range
-
-### GET `/api/v1/teams/:teamId/shifts?from=&to=`
-**Auth:** member of team
-**Response 200:** `{ "shifts": [ ... ] }`
-
-### GET `/api/v1/shifts/:shiftId`
-**Auth:** member of the shift's team
-**Response 200:** `{ "shift": { ... } }`
-**Errors:** `404`
-
-### PATCH `/api/v1/shifts/:shiftId`
-**Auth:** manager of team
-**Body:** partial `{ "date"?, "startTime"?, "endTime"?, "assignedUserId"? }`
-**Response 200:** `{ "shift": { ... } }`
-**Errors:** `409` overlap
-
-### DELETE `/api/v1/shifts/:shiftId`
-**Auth:** manager of team
-**Response 204**
-
----
-
-## SwapRequests
-
-**States:** `pending_employee` → `pending_manager` → `approved` | `denied`, plus `cancelled` (only from `pending_employee`, only by initiator).
-
-### POST `/api/v1/swap-requests`
-**Auth:** employee, must own the shift
-**Body:** `{ "shiftId": string, "targetUserId": string, "counterShiftId": string | null }`
-**Response 201:** `{ "swapRequest": { "id", "status": "pending_employee", ... } }`
-**Errors:** `403` doesn't own shift, `404` shift/target not found
-
-### GET `/api/v1/swap-requests?status=&role=`
-**Auth:** required
-**Behavior:** employees see requests where they are initiator or target; managers with `role=manager` see their team's `pending_manager` queue
-**Response 200:** `{ "swapRequests": [ ... ] }`
-
-### GET `/api/v1/swap-requests/:id`
-**Auth:** initiator, target, or manager of relevant team
-**Response 200:** `{ "swapRequest": { ... } }`
-
-### PATCH `/api/v1/swap-requests/:id/respond`
-**Auth:** target employee only
-**Body:** `{ "decision": "accept" | "decline" }`
-**Response 200:** `{ "swapRequest": { "status": "pending_manager" | "denied" } }`
-**Errors:** `409` not in `pending_employee` state
-
-### PATCH `/api/v1/swap-requests/:id/approve`
-**Auth:** manager of team
-**Response 200:** `{ "swapRequest": { "status": "approved" } }` — reassigns shift(s) atomically
-**Errors:** `409` not in `pending_manager` state
-
-### PATCH `/api/v1/swap-requests/:id/deny`
-**Auth:** manager of team
-**Response 200:** `{ "swapRequest": { "status": "denied" } }`
-
-### PATCH `/api/v1/swap-requests/:id/cancel`
-**Auth:** initiator only
-**Response 200:** `{ "swapRequest": { "status": "cancelled" } }`
-**Errors:** `409` not in `pending_employee` state
-
----
-
-## Notifications
-
-### GET `/api/v1/notifications?unread=`
-**Auth:** required
-**Response 200:** `{ "notifications": [{ "id", "type", "payload", "read", "createdAt" }] }`
-
-### PATCH `/api/v1/notifications/:id/read`
-**Auth:** owner of notification
-**Response 200:** `{ "notification": { "read": true } }`
-
-### PATCH `/api/v1/notifications/read-all`
-**Auth:** required
-**Response 200:** `{ "updated": number }`
-
-### GET `/api/v1/notifications/stream`
-**Auth:** required
-**Response:** SSE stream (`text/event-stream`) — pushes `Notification` objects as they're created for the connected user
-
----
-
-## Standard error shape
+All errors return:
 
 ```json
-{ "error": { "message": string, "code": string } }
+{ "error": { "message": "string", "code": "STRING_CODE" } }
 ```
 
-## Status code conventions
-- `200` success (read/update), `201` created, `204` deleted (no body)
-- `400` validation error, `401` not authenticated, `403` authenticated but not authorized, `404` not found, `409` conflict (state/business rule violation)
+## Status Codes
+
+| Code | Meaning |
+|------|---------|
+| 200 | Success (read/update) |
+| 201 | Resource created |
+| 204 | Resource deleted, no body |
+| 400 | Invalid request body or parameters |
+| 401 | Not authenticated |
+| 403 | Authenticated but not permitted |
+| 404 | Resource not found |
+| 409 | Conflict with current state |
+
+---
+
+## Auth Endpoints
+
+### POST /auth/signup
+
+Create a user account.
+
+| | |
+|---|---|
+| Auth | none |
+| Body | `{ "name": string, "email": string, "password": string }` |
+
+**Response 201**
+```json
+{ "user": { "id": "string", "name": "string", "email": "string" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 400 VALIDATION_ERROR | Missing name, invalid email, password < 8 chars |
+| 409 EMAIL_TAKEN | Email already registered |
+
+---
+
+### POST /auth/login
+
+Authenticate and start a session. Sets `token` cookie.
+
+| | |
+|---|---|
+| Auth | none |
+| Body | `{ "email": string, "password": string }` |
+
+**Response 200**
+```json
+{ "user": { "id": "string", "name": "string", "email": "string" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 400 VALIDATION_ERROR | Missing fields |
+| 401 INVALID_CREDENTIALS | Email or password incorrect |
+
+---
+
+### POST /auth/logout
+
+End the session. Clears `token` cookie.
+
+| | |
+|---|---|
+| Auth | none |
+| Body | none |
+
+**Response 200**
+```json
+{ "message": "Logged out" }
+```
+
+---
+
+### GET /auth/me
+
+Return the current user and their team membership.
+
+| | |
+|---|---|
+| Auth | required |
+
+**Response 200**
+```json
+{
+  "user": { "id": "string", "name": "string", "email": "string" },
+  "membership": { "teamId": "string", "role": "MANAGER | EMPLOYEE" }
+}
+```
+
+`membership` is `null` if the user has not joined a team.
+
+---
+
+## Team Endpoints
+
+### POST /teams
+
+Create a team. Creator becomes MANAGER.
+
+| | |
+|---|---|
+| Auth | required |
+| Body | `{ "name": string }` |
+
+**Response 201**
+```json
+{ "team": { "id": "string", "name": "string" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 409 ALREADY_ON_TEAM | User already belongs to a team |
+
+---
+
+### GET /teams/:teamId
+
+Get team details.
+
+| | |
+|---|---|
+| Auth | required, team member |
+
+**Response 200**
+```json
+{ "team": { "id": "string", "name": "string", "createdAt": "datetime" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MEMBER | Requester not on this team |
+| 404 TEAM_NOT_FOUND | No such team |
+
+---
+
+### GET /teams/:teamId/members
+
+List team members.
+
+| | |
+|---|---|
+| Auth | required, team member |
+
+**Response 200**
+```json
+{ "members": [ { "userId": "string", "name": "string", "email": "string", "role": "MANAGER | EMPLOYEE" } ] }
+```
+
+---
+
+### POST /teams/:teamId/members
+
+Add a user to the team by email.
+
+| | |
+|---|---|
+| Auth | required, team MANAGER |
+| Body | `{ "email": string, "role": "MANAGER" \| "EMPLOYEE" }` |
+
+**Response 201**
+```json
+{ "membership": { "userId": "string", "teamId": "string", "role": "string" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 404 USER_NOT_FOUND | No account with that email |
+| 409 ALREADY_ON_TEAM | User already belongs to a team |
+
+---
+
+### PATCH /teams/:teamId/members/:userId
+
+Change a member's role.
+
+| | |
+|---|---|
+| Auth | required, team MANAGER |
+| Body | `{ "role": "MANAGER" \| "EMPLOYEE" }` |
+
+**Response 200**
+```json
+{ "membership": { "userId": "string", "teamId": "string", "role": "string" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 404 MEMBERSHIP_NOT_FOUND | User not on this team |
+
+---
+
+### DELETE /teams/:teamId/members/:userId
+
+Remove a member from the team.
+
+| | |
+|---|---|
+| Auth | required, team MANAGER |
+
+**Response 204** — no body
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 404 MEMBERSHIP_NOT_FOUND | User not on this team |
+
+---
+
+## Shift Endpoints
+
+A shift belongs to a team and may be assigned to one member or left open (`assignedUserId: null`). A user cannot hold two shifts with overlapping time ranges; operations that would cause this return `409 SHIFT_OVERLAP`.
+
+### POST /teams/:teamId/shifts
+
+Create a shift.
+
+| | |
+|---|---|
+| Auth | required, team MANAGER |
+| Body | `{ "startTime": datetime, "endTime": datetime, "assignedUserId": string \| null }` |
+
+**Response 201**
+```json
+{ "shift": { "id": "string", "teamId": "string", "startTime": "datetime", "endTime": "datetime", "assignedUserId": "string | null" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 400 VALIDATION_ERROR | Invalid dates or startTime >= endTime |
+| 400 NOT_TEAM_MEMBER | assignedUserId not on this team |
+| 409 SHIFT_OVERLAP | Assignee has an overlapping shift |
+
+---
+
+### GET /teams/:teamId/shifts?from=&to=
+
+List team shifts, optionally windowed by date range. Sorted by startTime ascending.
+
+| | |
+|---|---|
+| Auth | required, team member |
+| Query | `from` (datetime, optional), `to` (datetime, optional) |
+
+**Response 200**
+```json
+{ "shifts": [ { "id": "string", "teamId": "string", "startTime": "datetime", "endTime": "datetime", "assignedUser": { "id": "string", "name": "string" } } ] }
+```
+
+`assignedUser` is `null` for open shifts.
+
+---
+
+### GET /shifts/:shiftId
+
+Get a single shift.
+
+| | |
+|---|---|
+| Auth | required, member of shift's team |
+
+**Response 200** — same shift shape as above
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MEMBER | Requester not on shift's team |
+| 404 SHIFT_NOT_FOUND | No such shift |
+
+---
+
+### PATCH /shifts/:shiftId
+
+Update a shift. Partial body; omitted fields are unchanged. `assignedUserId: null` explicitly unassigns.
+
+| | |
+|---|---|
+| Auth | required, MANAGER of shift's team |
+| Body | `{ "startTime"?: datetime, "endTime"?: datetime, "assignedUserId"?: string \| null }` |
+
+**Response 200** — updated shift
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 400 VALIDATION_ERROR | Invalid dates or startTime >= endTime |
+| 400 NOT_TEAM_MEMBER | assignedUserId not on this team |
+| 404 SHIFT_NOT_FOUND | No such shift |
+| 409 SHIFT_OVERLAP | Assignee has an overlapping shift |
+
+---
+
+### DELETE /shifts/:shiftId
+
+Delete a shift.
+
+| | |
+|---|---|
+| Auth | required, MANAGER of shift's team |
+
+**Response 204** — no body
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 404 SHIFT_NOT_FOUND | No such shift |
+
+---
+
+## Swap Request Endpoints
+
+A swap request proposes transferring the initiator's shift to a target user. If `counterShiftId` is set, the target's shift transfers to the initiator in the same operation (two-way trade).
+
+**State machine:**
+
+| State | Meaning |
+|-------|---------|
+| PENDING_EMPLOYEE | Awaiting target's response |
+| PENDING_MANAGER | Target accepted; awaiting manager |
+| APPROVED | Manager approved; shifts reassigned |
+| DENIED | Target declined or manager denied |
+| CANCELLED | Initiator withdrew before target responded |
+
+**Transitions:**
+
+| From | Action | Actor | To |
+|------|--------|-------|-----|
+| PENDING_EMPLOYEE | respond (accept) | target | PENDING_MANAGER |
+| PENDING_EMPLOYEE | respond (decline) | target | DENIED |
+| PENDING_EMPLOYEE | cancel | initiator | CANCELLED |
+| PENDING_MANAGER | approve | manager | APPROVED |
+| PENDING_MANAGER | deny | manager | DENIED |
+
+Any action outside these transitions returns `409 INVALID_TRANSITION`. Shift reassignment happens only on approval, atomically, with the overlap check re-run at that moment.
+
+**Object shape:**
+```json
+{
+  "id": "string",
+  "initiatorUserId": "string",
+  "shiftId": "string",
+  "targetUserId": "string",
+  "counterShiftId": "string | null",
+  "status": "PENDING_EMPLOYEE | PENDING_MANAGER | APPROVED | DENIED | CANCELLED",
+  "createdAt": "datetime",
+  "respondedAt": "datetime | null",
+  "resolvedAt": "datetime | null"
+}
+```
+
+### POST /swap-requests
+
+Create a swap request. Initiator must be assigned to `shiftId`; if `counterShiftId` is set, target must be assigned to it.
+
+| | |
+|---|---|
+| Auth | required |
+| Body | `{ "shiftId": string, "targetUserId": string, "counterShiftId": string \| null }` |
+
+**Response 201** — swap request object, status `PENDING_EMPLOYEE`
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 400 VALIDATION_ERROR | Target is self, or counterShift not owned by target |
+| 403 NOT_SHIFT_OWNER | Initiator not assigned to shiftId |
+| 404 | Shift or target user not found |
+
+---
+
+### GET /swap-requests?status=&role=
+
+List swap requests. Employees see requests where they are initiator or target. Managers passing `role=manager` see their team's PENDING_MANAGER queue. `status` filters either view.
+
+| | |
+|---|---|
+| Auth | required |
+| Query | `status` (optional), `role` (optional, `manager`) |
+
+**Response 200**
+```json
+{ "swapRequests": [ ... ] }
+```
+
+---
+
+### GET /swap-requests/:id
+
+Get a single swap request.
+
+| | |
+|---|---|
+| Auth | required; initiator, target, or MANAGER of relevant team |
+
+**Response 200** — swap request object
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 | Requester not involved and not a manager |
+| 404 | No such request |
+
+---
+
+### PATCH /swap-requests/:id/respond
+
+Target accepts or declines.
+
+| | |
+|---|---|
+| Auth | required, target only |
+| Body | `{ "decision": "accept" \| "decline" }` |
+
+**Response 200** — status `PENDING_MANAGER` or `DENIED`
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_SWAP_TARGET | Requester is not the target |
+| 409 INVALID_TRANSITION | Not in PENDING_EMPLOYEE |
+
+---
+
+### PATCH /swap-requests/:id/approve
+
+Manager approves. Reassigns shift(s) atomically.
+
+| | |
+|---|---|
+| Auth | required, MANAGER of relevant team |
+
+**Response 200** — status `APPROVED`
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 409 INVALID_TRANSITION | Not in PENDING_MANAGER |
+| 409 SHIFT_OVERLAP | Reassignment would double-book; request stays PENDING_MANAGER |
+
+---
+
+### PATCH /swap-requests/:id/deny
+
+Manager denies.
+
+| | |
+|---|---|
+| Auth | required, MANAGER of relevant team |
+
+**Response 200** — status `DENIED`
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 409 INVALID_TRANSITION | Not in PENDING_MANAGER |
+
+---
+
+### PATCH /swap-requests/:id/cancel
+
+Initiator withdraws the request.
+
+| | |
+|---|---|
+| Auth | required, initiator only |
+
+**Response 200** — status `CANCELLED`
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_SWAP_INITIATOR | Requester is not the initiator |
+| 409 INVALID_TRANSITION | Not in PENDING_EMPLOYEE |
+
+---
+
+## Notification Endpoints
+
+Notifications are persisted rows delivered live over SSE when the user is connected. Users only ever access their own notifications.
+
+**Object shape:**
+```json
+{
+  "id": "string",
+  "userId": "string",
+  "type": "SWAP_REQUESTED | SWAP_ACCEPTED | SWAP_DENIED | SWAP_APPROVED | SWAP_CANCELLED",
+  "payload": {},
+  "read": false,
+  "createdAt": "datetime"
+}
+```
+
+### GET /notifications?unread=
+
+List the current user's notifications, newest first.
+
+| | |
+|---|---|
+| Auth | required |
+| Query | `unread` (optional, `true` filters to unread) |
+
+**Response 200**
+```json
+{ "notifications": [ ... ] }
+```
+
+---
+
+### PATCH /notifications/:id/read
+
+Mark one notification read.
+
+| | |
+|---|---|
+| Auth | required, owner only |
+
+**Response 200**
+```json
+{ "notification": { "id": "string", "read": true } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 | Not the owner |
+| 404 | No such notification |
+
+---
+
+### PATCH /notifications/read-all
+
+Mark all of the current user's notifications read.
+
+| | |
+|---|---|
+| Auth | required |
+
+**Response 200**
+```json
+{ "updated": 0 }
+```
+
+---
+
+### GET /notifications/stream
+
+Open an SSE connection (`Content-Type: text/event-stream`). Server pushes each new notification for the authenticated user as it is created.
+
+| | |
+|---|---|
+| Auth | required |
+
+**Response** — SSE stream of notification objects
