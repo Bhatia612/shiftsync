@@ -1,6 +1,7 @@
 const prisma = require("../config/prisma");
 const AppError = require("../utils/AppError");
 const { checkOverlap } = require("./shifts.service");
+const notificationsService = require("./notifications.service");
 
 const TRANSITIONS = {
   PENDING_EMPLOYEE: {
@@ -26,6 +27,15 @@ const assertTransition = (swap, action) => {
   }
 
   return nextStatus;
+};
+
+// Fire-and-forget notification helper: a notification failure must never
+// break the swap operation that already succeeded, and must never make the
+// caller wait. We log failures instead of throwing them.
+const notifySafe = (payload) => {
+  notificationsService
+    .notify(payload)
+    .catch((err) => console.error("Notification failed:", err));
 };
 
 const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }) => {
@@ -78,6 +88,13 @@ const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }
       targetUserId,
       counterShiftId: counterShiftId || null,
     },
+  });
+
+  // Target learns they have a swap to respond to.
+  notifySafe({
+    userId: targetUserId,
+    type: "SWAP_REQUESTED",
+    payload: { swapRequestId: swapRequest.id, shiftId, fromUserId: initiatorUserId },
   });
 
   return swapRequest;
@@ -153,7 +170,7 @@ const respond = async ({ id, userId, decision }) => {
 
   const nextStatus = assertTransition(swap, decision === "accept" ? "accept" : "decline");
 
-  return prisma.swapRequest.update({
+  const updated = await prisma.swapRequest.update({
     where: { id },
     data: {
       status: nextStatus,
@@ -161,6 +178,15 @@ const respond = async ({ id, userId, decision }) => {
       ...(nextStatus === "DENIED" && { resolvedAt: new Date() }),
     },
   });
+
+  // Initiator learns whether the target accepted (now pending manager) or declined.
+  notifySafe({
+    userId: swap.initiatorUserId,
+    type: nextStatus === "PENDING_MANAGER" ? "SWAP_ACCEPTED" : "SWAP_DENIED",
+    payload: { swapRequestId: id },
+  });
+
+  return updated;
 };
 
 const approve = async ({ id, userId }) => {
@@ -240,6 +266,18 @@ const approve = async ({ id, userId }) => {
 
   const results = await prisma.$transaction(operations);
 
+  // Both parties learn the swap went through.
+  notifySafe({
+    userId: swap.initiatorUserId,
+    type: "SWAP_APPROVED",
+    payload: { swapRequestId: id },
+  });
+  notifySafe({
+    userId: swap.targetUserId,
+    type: "SWAP_APPROVED",
+    payload: { swapRequestId: id },
+  });
+
   return results[results.length - 1];
 };
 
@@ -263,10 +301,24 @@ const deny = async ({ id, userId }) => {
 
   const nextStatus = assertTransition(swap, "deny");
 
-  return prisma.swapRequest.update({
+  const updated = await prisma.swapRequest.update({
     where: { id },
     data: { status: nextStatus, resolvedAt: new Date() },
   });
+
+  // Both parties learn the manager denied it.
+  notifySafe({
+    userId: swap.initiatorUserId,
+    type: "SWAP_DENIED",
+    payload: { swapRequestId: id },
+  });
+  notifySafe({
+    userId: swap.targetUserId,
+    type: "SWAP_DENIED",
+    payload: { swapRequestId: id },
+  });
+
+  return updated;
 };
 
 const cancel = async ({ id, userId }) => {
@@ -282,10 +334,19 @@ const cancel = async ({ id, userId }) => {
 
   const nextStatus = assertTransition(swap, "cancel");
 
-  return prisma.swapRequest.update({
+  const updated = await prisma.swapRequest.update({
     where: { id },
     data: { status: nextStatus, resolvedAt: new Date() },
   });
+
+  // Target learns the initiator withdrew the request.
+  notifySafe({
+    userId: swap.targetUserId,
+    type: "SWAP_CANCELLED",
+    payload: { swapRequestId: id },
+  });
+
+  return updated;
 };
 
 module.exports = { create, list, getOne, respond, approve, deny, cancel };
