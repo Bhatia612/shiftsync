@@ -1,13 +1,14 @@
 const express = require("express");
 const swapRequestsRoutes = express.Router();
 const swapRequestsController = require("../controllers/swapRequests.controller");
+const { requireAuth } = require("../middleware/auth.middleware");
 
-swapRequestsRoutes.post("/", swapRequestsController.create);
-swapRequestsRoutes.get("/", swapRequestsController.list);
-swapRequestsRoutes.get("/:id", swapRequestsController.getOne);
-swapRequestsRoutes.patch("/:id/respond", swapRequestsController.respond);
-swapRequestsRoutes.patch("/:id/approve", swapRequestsController.approve);
-swapRequestsRoutes.patch("/:id/deny", swapRequestsController.deny);
-swapRequestsRoutes.patch("/:id/cancel", swapRequestsController.cancel);
+router.post("/", requireAuth, swapRequestsController.create);
+router.get("/", requireAuth, swapRequestsController.list);
+router.get("/:id", requireAuth, swapRequestsController.getOne);
+router.patch("/:id/respond", requireAuth, swapRequestsController.respond);
+router.patch("/:id/approve", requireAuth, swapRequestsController.approve);
+router.patch("/:id/deny", requireAuth, swapRequestsController.deny);
+router.patch("/:id/cancel", requireAuth, swapRequestsController.cancel);
 
 module.exports = swapRequestsRoutes;
