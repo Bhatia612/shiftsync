@@ -2,8 +2,8 @@ const prisma = require("../config/prisma")
 const AppError = require("../utils/AppError")
 
 const createTeam = async ({ name, userId }) => {
-    const existingMembership = await prisma.membership.findUnique({
-        where: { userId }
+    const existingMembership = await prisma.membership.findFirst({
+        where: { userId },
     })
 
     if (existingMembership) {
@@ -13,10 +13,10 @@ const createTeam = async ({ name, userId }) => {
     const team = await prisma.team.create({
         data: {
             name,
-            membership: {
-                create: { userId, role: "MANAGER" }
-            }
-        }
+            memberships: {
+                create: { userId, role: "MANAGER" },
+            },
+        },
     })
 
     return { id: team.id, name: team.name }
