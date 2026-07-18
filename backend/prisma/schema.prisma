@@ -37,11 +37,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships     Membership[]
-  assignedShifts  Shift[]
-  initiatedSwaps  SwapRequest[]   @relation("Initiator")
-  targetedSwaps   SwapRequest[]   @relation("Target")
-  notifications   Notification[]
+  memberships    Membership[]
+  assignedShifts Shift[]
+  initiatedSwaps SwapRequest[]  @relation("Initiator")
+  targetedSwaps  SwapRequest[]  @relation("Target")
+  notifications  Notification[]
 }
 
 model Team {
@@ -51,6 +51,7 @@ model Team {
 
   memberships Membership[]
   shifts      Shift[]
+  positions   Position[]
 }
 
 model Membership {
@@ -66,17 +67,31 @@ model Membership {
   @@unique([userId, teamId])
 }
 
+model Position {
+  id        String   @id @default(uuid())
+  teamId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  team   Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  shifts Shift[]
+
+  @@unique([teamId, name])
+}
+
 model Shift {
   id             String   @id @default(uuid())
   teamId         String
+  positionId     String
   startTime      DateTime
   endTime        DateTime
   assignedUserId String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  team         Team  @relation(fields: [teamId], references: [id])
-  assignedUser User? @relation(fields: [assignedUserId], references: [id])
+  team         Team     @relation(fields: [teamId], references: [id])
+  position     Position @relation(fields: [positionId], references: [id])
+  assignedUser User?    @relation(fields: [assignedUserId], references: [id])
 
   swapRequestsAsShift        SwapRequest[] @relation("ShiftRelation")
   swapRequestsAsCounterShift SwapRequest[] @relation("CounterShiftRelation")

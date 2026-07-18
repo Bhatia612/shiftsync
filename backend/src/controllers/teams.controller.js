@@ -20,7 +20,7 @@ const getTeam = asyncHandler(async (req, res) => {
 
 const listMembers = asyncHandler(async (req, res) => {
     const members = await teamService.listMembers(req.params.teamId)
-    res.status(200).json({ team })
+    res.status(200).json({ members })
 })
 
 

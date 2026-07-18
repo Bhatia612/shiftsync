@@ -2,57 +2,68 @@ const prisma = require("../config/prisma")
 const AppError = require("../utils/AppError")
 
 
-const checkOverlap = async ({ userId, startTime, endTime, excludeShitId }) => {
-    const overlapping = await prisma.shift.findFirst({
-        where: {
-            assignedUser: userId,
-            startTime: { lt: endTime },
-            endTime: { gt: startTime },
-            ...(excludeShitId && { id: { not: excludeShitId } })
-        }
-    })
+const checkOverlap = async ({ userId, startTime, endTime, excludeShiftId }) => {
+  const overlapping = await prisma.shift.findFirst({
+    where: {
+      assignedUserId: userId,
+      startTime: { lt: endTime },
+      endTime: { gt: startTime },
+      ...(excludeShiftId && { id: { not: excludeShiftId } }),
+    },
+  })
 
-    return overlapping
+  return overlapping
 }
 
 
 
-const createShift = async ({ teamId, startTime, endTime, assignedUserId }) => {
+const createShift = async ({ teamId, positionId, startTime, endTime, assignedUserId }) => {
     const start = new Date(startTime)
     const end = new Date(endTime)
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        throw new AppError("startTime and endTime must be valid dates", 400), "VALIDATION_ERROR"
+        throw new AppError("startTime and endTime must be valid dates", 400, "VALIDATION_ERROR")
     }
 
     if (start >= end) {
-        throw new AppError("startTime and endTime must be valid dates", 400, "VALIDATION_ERROR");
+        throw new AppError("startTime must be before endTime", 400, "VALIDATION_ERROR")
+    }
+
+    // Position must exist and belong to this team.
+    const position = await prisma.position.findUnique({ where: { id: positionId } })
+
+    if (!position || position.teamId !== teamId) {
+        throw new AppError("Position not found on this team", 400, "POSITION_NOT_FOUND")
     }
 
     if (assignedUserId) {
         const membership = await prisma.membership.findUnique({
-            where: { userId_teamId: { userId: assignedUserId, teamId } }
+            where: { userId_teamId: { userId: assignedUserId, teamId } },
         })
-    }
 
-    if (!membership) {
-        throw new AppError("Assigned user is not a member of this team", 400, "NOT_TEAM_MEMBER");
-    }
+        if (!membership) {
+            throw new AppError("Assigned user is not a member of this team", 400, "NOT_TEAM_MEMBER")
+        }
 
-    const overlap = await checkOverlap({ userId: assignedUserId, startTime: start, endTime: end })
+        const overlap = await checkOverlap({ userId: assignedUserId, startTime: start, endTime: end })
 
-    if (overlap) {
-        throw new AppError("User already has a shift in this time range", 409, "SHIFT_OVERLAP");
+        if (overlap) {
+            throw new AppError("User already has a shift in this time range", 409, "SHIFT_OVERLAP")
+        }
     }
 
     const shift = await prisma.shift.create({
-        data: { teamId, startTime: start, endTime: end, assignedUserId: assignedUserId || null }
+        data: {
+            teamId,
+            positionId,
+            startTime: start,
+            endTime: end,
+            assignedUserId: assignedUserId || null,
+        },
     })
 
     return shift
-
 }
-
 
 
 const listShiftsForTeam = async (teamId, from, to) => {
@@ -90,57 +101,73 @@ const getShift = async (shiftId) => {
 
 
 const updateShift = async ({ shiftId, data }) => {
-    const existing = await prisma.shift.findUnique({
-        where: { id: shiftId }
-    })
+    const existing = await prisma.shift.findUnique({ where: { id: shiftId } })
 
     if (!existing) {
         throw new AppError("Shift not found", 404, "SHIFT_NOT_FOUND")
     }
 
-    const startTime = data.startTime ? new Date(data.startTime) : existing.startTime;
-    const endTime = data.endTime ? new Date(data.endTime) : existing.endTime;
+    const startTime = data.startTime ? new Date(data.startTime) : existing.startTime
+    const endTime = data.endTime ? new Date(data.endTime) : existing.endTime
 
     if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-        throw new AppError("startTime and endTime must be valid dates", 400, "VALIDATION_ERROR");
+        throw new AppError("startTime and endTime must be valid dates", 400, "VALIDATION_ERROR")
     }
 
     if (startTime >= endTime) {
-        throw new AppError("startTime must be before endTime", 400, "VALIDATION_ERROR");
+        throw new AppError("startTime must be before endTime", 400, "VALIDATION_ERROR")
     }
 
-    const assignedUserId = data.assignedUserId !== undefined ? data.assignedUserId : existing.assignedUserId
+    // If the position is being changed, validate the new one belongs to this team.
+    if (data.positionId !== undefined) {
+        const position = await prisma.position.findUnique({ where: { id: data.positionId } })
+
+        if (!position || position.teamId !== existing.teamId) {
+            throw new AppError("Position not found on this team", 400, "POSITION_NOT_FOUND")
+        }
+    }
+
+    const assignedUserId =
+        data.assignedUserId !== undefined ? data.assignedUserId : existing.assignedUserId
 
     if (assignedUserId) {
         const membership = await prisma.membership.findUnique({
-            where: { userId_teamId: { userId: assignedUserId, teamId: existing.teamId } }
+            where: { userId_teamId: { userId: assignedUserId, teamId: existing.teamId } },
         })
+
+        if (!membership) {
+            throw new AppError("Assigned user is not a member of this team", 400, "NOT_TEAM_MEMBER")
+        }
+
+        const overlap = await checkOverlap({
+            userId: assignedUserId,
+            startTime,
+            endTime,
+            excludeShiftId: shiftId,
+        })
+
+        if (overlap) {
+            throw new AppError("User already has a shift in this time range", 409, "SHIFT_OVERLAP")
+        }
     }
 
-    if (!membership) {
-        throw new AppError("Assigned use is not a member of this team", 400, "NOT_TEAM_MEMBER")
-    }
-
-    const overlap = await checkOverlap({
-        userId: assignedUserId,
+    const updateData = {
         startTime,
         endTime,
-        excludeShitId: shiftId
-    })
+        assignedUserId,
+    }
 
-    if (overlap) {
-        throw new AppError("User already has a shift in this time range", 409, "SHIFT_OVERLAP");
+    // Only include positionId in the update if it was provided.
+    if (data.positionId !== undefined) {
+        updateData.positionId = data.positionId
     }
 
     const shift = await prisma.shift.update({
-        where: {
-            id: shiftId,
-            data: { startTime, endTime, assignedUserId }
-        }
+        where: { id: shiftId },
+        data: updateData,
     })
 
-    return shift;
-
+    return shift
 }
 
 

@@ -5,9 +5,10 @@ const shiftServices = require("../services/shifts.service")
 const createShift = asyncHandler(async (req, res) => {
     const shift = await shiftServices.createShift({
         teamId: req.params.teamId,
+        positionId: req.body.positionId,
         startTime: req.body.startTime,
-        endTime: req.body.endTIme,
-        assignedUserId: req.body.assignedUserId
+        endTime: req.body.endTime,
+        assignedUserId: req.body.assignedUserId,
     })
 
     res.status(201).json({ shift })
