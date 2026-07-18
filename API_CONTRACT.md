@@ -239,9 +239,70 @@ Remove a member from the team.
 
 ---
 
+## Position Endpoints
+
+A position is a job role within a team (e.g. Cashier, Cook). Positions are defined per team and referenced by shifts. Position names are unique within a team.
+
+### POST /teams/:teamId/positions
+
+Create a position for the team.
+
+| | |
+|---|---|
+| Auth | required, team MANAGER |
+| Body | `{ "name": string }` |
+
+**Response 201**
+```json
+{ "position": { "id": "string", "teamId": "string", "name": "string", "createdAt": "datetime" } }
+```
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 400 VALIDATION_ERROR | Name missing or empty |
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 409 POSITION_EXISTS | Team already has a position with that name |
+
+---
+
+### GET /teams/:teamId/positions
+
+List the team's positions, sorted by name.
+
+| | |
+|---|---|
+| Auth | required, team member |
+
+**Response 200**
+```json
+{ "positions": [ { "id": "string", "teamId": "string", "name": "string", "createdAt": "datetime" } ] }
+```
+
+---
+
+### DELETE /teams/:teamId/positions/:positionId
+
+Delete a position. Fails if any shift still references it.
+
+| | |
+|---|---|
+| Auth | required, team MANAGER |
+
+**Response 204** — no body
+
+**Errors**
+| Code | Condition |
+|------|-----------|
+| 403 NOT_TEAM_MANAGER | Requester not a manager |
+| 404 POSITION_NOT_FOUND | No such position on this team |
+| 409 POSITION_IN_USE | A shift still uses this position |
+
+---
+
 ## Shift Endpoints
 
-A shift belongs to a team and may be assigned to one member or left open (`assignedUserId: null`). A user cannot hold two shifts with overlapping time ranges; operations that would cause this return `409 SHIFT_OVERLAP`.
+A shift belongs to a team, has a required position (job role), and may be assigned to one member or left open (`assignedUserId: null`). A user cannot hold two shifts with overlapping time ranges; operations that would cause this return `409 SHIFT_OVERLAP`.
 
 ### POST /teams/:teamId/shifts
 
@@ -250,17 +311,18 @@ Create a shift.
 | | |
 |---|---|
 | Auth | required, team MANAGER |
-| Body | `{ "startTime": datetime, "endTime": datetime, "assignedUserId": string \| null }` |
+| Body | `{ "positionId": string, "startTime": datetime, "endTime": datetime, "assignedUserId": string \| null }` |
 
 **Response 201**
 ```json
-{ "shift": { "id": "string", "teamId": "string", "startTime": "datetime", "endTime": "datetime", "assignedUserId": "string | null" } }
+{ "shift": { "id": "string", "teamId": "string", "positionId": "string", "startTime": "datetime", "endTime": "datetime", "assignedUserId": "string | null" } }
 ```
 
 **Errors**
 | Code | Condition |
 |------|-----------|
 | 400 VALIDATION_ERROR | Invalid dates or startTime >= endTime |
+| 400 POSITION_NOT_FOUND | positionId not found on this team |
 | 400 NOT_TEAM_MEMBER | assignedUserId not on this team |
 | 409 SHIFT_OVERLAP | Assignee has an overlapping shift |
 
@@ -277,7 +339,7 @@ List team shifts, optionally windowed by date range. Sorted by startTime ascendi
 
 **Response 200**
 ```json
-{ "shifts": [ { "id": "string", "teamId": "string", "startTime": "datetime", "endTime": "datetime", "assignedUser": { "id": "string", "name": "string" } } ] }
+{ "shifts": [ { "id": "string", "teamId": "string", "positionId": "string", "startTime": "datetime", "endTime": "datetime", "assignedUser": { "id": "string", "name": "string" } } ] }
 ```
 
 `assignedUser` is `null` for open shifts.
@@ -309,7 +371,7 @@ Update a shift. Partial body; omitted fields are unchanged. `assignedUserId: nul
 | | |
 |---|---|
 | Auth | required, MANAGER of shift's team |
-| Body | `{ "startTime"?: datetime, "endTime"?: datetime, "assignedUserId"?: string \| null }` |
+| Body | `{ "positionId"?: string, "startTime"?: datetime, "endTime"?: datetime, "assignedUserId"?: string \| null }` |
 
 **Response 200** — updated shift
 
@@ -317,6 +379,7 @@ Update a shift. Partial body; omitted fields are unchanged. `assignedUserId: nul
 | Code | Condition |
 |------|-----------|
 | 400 VALIDATION_ERROR | Invalid dates or startTime >= endTime |
+| 400 POSITION_NOT_FOUND | positionId not found on this team |
 | 400 NOT_TEAM_MEMBER | assignedUserId not on this team |
 | 404 SHIFT_NOT_FOUND | No such shift |
 | 409 SHIFT_OVERLAP | Assignee has an overlapping shift |
