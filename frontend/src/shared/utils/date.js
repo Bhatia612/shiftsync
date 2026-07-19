@@ -21,7 +21,7 @@ export const formatDayName = (date) =>
   date.toLocaleDateString(undefined, { weekday: "long" })
 
 export const formatShortDate = (date) =>
-  date.toLocaleDateString(undefined, { month: "numeric", day: "numeric" })
+  date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
 
 export const formatRangeLabel = (start, end) =>
   `${start.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${end.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
@@ -36,6 +36,16 @@ export const sameDay = (a, b) =>
   a.getFullYear() === b.getFullYear() &&
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate()
+
+export const getRelativeDayTag = (date) => {
+  const today = new Date()
+
+  if (sameDay(date, today)) return "Today"
+  if (sameDay(date, addDays(today, -1))) return "Yesterday"
+  if (sameDay(date, addDays(today, 1))) return "Tomorrow"
+
+  return null
+}
 
 export const hoursBetween = (startIso, endIso) =>
   (new Date(endIso) - new Date(startIso)) / (1000 * 60 * 60)
