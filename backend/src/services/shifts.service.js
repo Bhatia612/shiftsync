@@ -3,16 +3,16 @@ const AppError = require("../utils/AppError")
 
 
 const checkOverlap = async ({ userId, startTime, endTime, excludeShiftId }) => {
-  const overlapping = await prisma.shift.findFirst({
-    where: {
-      assignedUserId: userId,
-      startTime: { lt: endTime },
-      endTime: { gt: startTime },
-      ...(excludeShiftId && { id: { not: excludeShiftId } }),
-    },
-  })
+    const overlapping = await prisma.shift.findFirst({
+        where: {
+            assignedUserId: userId,
+            startTime: { lt: endTime },
+            endTime: { gt: startTime },
+            ...(excludeShiftId && { id: { not: excludeShiftId } }),
+        },
+    })
 
-  return overlapping
+    return overlapping
 }
 
 
@@ -66,22 +66,24 @@ const createShift = async ({ teamId, positionId, startTime, endTime, assignedUse
 }
 
 
-const listShiftsForTeam = async (teamId, from, to) => {
+const listShiftsForTeam = async ({ teamId, from, to }) => {
     const where = { teamId }
 
     if (from || to) {
-        where.startTime = {};
-        if (from) where.startTime.gte = new Date(from);
-        if (to) { where.startTime.lte = new Date(to) };
+        where.startTime = {}
+        if (from) where.startTime.gte = new Date(from)
+        if (to) where.startTime.lte = new Date(to)
     }
 
     const shifts = await prisma.shift.findMany({
         where,
         orderBy: { startTime: "asc" },
-        include: { assignedUser: { select: { id: true, name: true } } }
+        include: {
+            assignedUser: { select: { id: true, name: true } },
+        },
     })
 
-    return shifts;
+    return shifts
 }
 
 
