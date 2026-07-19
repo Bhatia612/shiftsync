@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "../../../shared/context/AuthContext"
-import { getPositions } from "../../teams/services/teamsApi"
+import { getPositions, getTeamMembers } from "../../teams/services/teamsApi"
 import { getShifts } from "../services/shiftsApi"
 import ScheduleSkeleton from "../components/ScheduleSkeleton"
+import ShiftModal from "../components/ShiftModal"
 import {
     startOfWeek,
     addDays,
@@ -14,6 +15,7 @@ import {
     formatTime,
     sameDay,
     getRelativeDayTag,
+    isFutureDay,
 } from "../../../shared/utils/date"
 
 function ManagerSchedulePage() {
@@ -21,12 +23,19 @@ function ManagerSchedulePage() {
     const teamId = membership.teamId
 
     const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
+    const [modalState, setModalState] = useState(null)
+
     const weekEnd = addDays(weekStart, 6)
     const days = getWeekDays(weekStart)
 
     const { data: positions = [] } = useQuery({
         queryKey: ["positions", teamId],
         queryFn: () => getPositions(teamId),
+    })
+
+    const { data: members = [] } = useQuery({
+        queryKey: ["members", teamId],
+        queryFn: () => getTeamMembers(teamId),
     })
 
     const { data: shifts = [], isLoading } = useQuery({
@@ -88,15 +97,17 @@ function ManagerSchedulePage() {
                             const dayShifts = shiftsForDay(day)
                             const isToday = sameDay(day, new Date())
                             const relativeTag = getRelativeDayTag(day)
+                            const editable = isFutureDay(day)
 
                             return (
                                 <div
                                     key={day.toISOString()}
-                                    className="panel overflow-x-auto w-full shrink-0 md:w-80"
+                                    className="panel w-full shrink-0 overflow-hidden md:w-80"
                                 >
                                     <div
-                                        className={`flex items-baseline justify-between border-b border-border px-4 py-3 ${isToday ? "bg-accent-soft" : ""
-                                            }`}
+                                        className={`flex items-baseline justify-between border-b border-border px-4 py-3 ${
+                                            isToday ? "bg-accent-soft" : ""
+                                        }`}
                                     >
                                         <div className="flex items-baseline gap-2">
                                             <p className="text-sm font-semibold text-text">
@@ -104,10 +115,11 @@ function ManagerSchedulePage() {
                                             </p>
                                             {relativeTag && (
                                                 <span
-                                                    className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${isToday
-                                                        ? "bg-accent text-white"
-                                                        : "bg-surface-2 text-text-muted"
-                                                        }`}
+                                                    className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${
+                                                        isToday
+                                                            ? "bg-accent text-white"
+                                                            : "bg-surface-2 text-text-muted"
+                                                    }`}
                                                 >
                                                     {relativeTag}
                                                 </span>
@@ -121,25 +133,56 @@ function ManagerSchedulePage() {
                                     {dayShifts.length === 0 ? (
                                         <p className="px-4 py-5 text-sm text-text-muted">No shifts</p>
                                     ) : (
-                                        <div className="divide-y divide-border">
-                                            {dayShifts.map((shift) => (
-                                                <div
-                                                    key={shift.id}
-                                                    className="flex items-baseline justify-between gap-3 px-4 py-3"
-                                                >
-                                                    <div className="min-w-0">
-                                                        <p className="truncate text-sm text-text">
-                                                            {shift.assignedUser?.name || "Open shift"}
-                                                        </p>
-                                                        <p className="truncate text-xs text-text-muted">
+                                        <div className="divide-y divide-border bg-surface-2">
+                                            {dayShifts.map((shift) =>
+                                                editable ? (
+                                                    <button
+                                                        key={shift.id}
+                                                        onClick={() => setModalState({ shift })}
+                                                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-surface"
+                                                    >
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-sm font-semibold text-text">
+                                                                {shift.assignedUser?.name || "Open shift"}
+                                                            </p>
+                                                            <p className="data mt-0.5 text-xs text-text-muted">
+                                                                {formatTime(shift.startTime)} – {formatTime(shift.endTime)}
+                                                            </p>
+                                                        </div>
+                                                        <span className="shrink-0 rounded-md bg-surface px-2 py-1 text-[0.6875rem] text-text-muted">
                                                             {positionName(shift.positionId)}
-                                                        </p>
+                                                        </span>
+                                                    </button>
+                                                ) : (
+                                                    <div
+                                                        key={shift.id}
+                                                        className="flex items-center gap-3 px-4 py-3"
+                                                    >
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-sm font-semibold text-text">
+                                                                {shift.assignedUser?.name || "Open shift"}
+                                                            </p>
+                                                            <p className="data mt-0.5 text-xs text-text-muted">
+                                                                {formatTime(shift.startTime)} – {formatTime(shift.endTime)}
+                                                            </p>
+                                                        </div>
+                                                        <span className="shrink-0 rounded-md bg-surface px-2 py-1 text-[0.6875rem] text-text-muted">
+                                                            {positionName(shift.positionId)}
+                                                        </span>
                                                     </div>
-                                                    <p className="data shrink-0 text-xs text-text-muted">
-                                                        {formatTime(shift.startTime)} – {formatTime(shift.endTime)}
-                                                    </p>
-                                                </div>
-                                            ))}
+                                                )
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {editable && (
+                                        <div className="border-t border-border p-2">
+                                            <button
+                                                onClick={() => setModalState({ defaultDate: day })}
+                                                className="btn btn-ghost w-full !py-1.5 text-sm"
+                                            >
+                                                + Add shift
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -147,6 +190,17 @@ function ManagerSchedulePage() {
                         })}
                     </div>
                 </div>
+            )}
+
+            {modalState && (
+                <ShiftModal
+                    shift={modalState.shift}
+                    defaultDate={modalState.defaultDate}
+                    teamId={teamId}
+                    members={members}
+                    positions={positions}
+                    onClose={() => setModalState(null)}
+                />
             )}
         </div>
     )

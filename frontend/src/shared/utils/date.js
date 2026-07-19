@@ -71,3 +71,13 @@ export const combineDateAndTime = (dateValue, timeValue) => {
   const [hours, minutes] = timeValue.split(":").map(Number)
   return new Date(year, month - 1, day, hours, minutes).toISOString()
 }
+
+export const isFutureDay = (date) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+
+  return d > today
+}

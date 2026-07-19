@@ -63,8 +63,7 @@ function EmployeeSchedulePage() {
         myShifts.filter((s) => sameDay(new Date(s.startTime), day))
 
     const tabClass = (offset) =>
-        `btn !py-1.5 text-sm ${
-            weekOffset === offset ? "btn-primary" : "btn-secondary"
+        `btn !py-1.5 text-sm ${weekOffset === offset ? "btn-primary" : "btn-secondary"
         }`
 
     return (
@@ -86,7 +85,7 @@ function EmployeeSchedulePage() {
                 </div>
 
                 <div className="panel p-5">
-                    <p className="text-sm text-text-muted">Upcoming shift . . .</p>
+                    <p className="text-sm text-text-muted">Upcoming shift</p>
                     {nextShift ? (
                         <>
                             <p className="mt-1 text-lg font-semibold text-text">
@@ -143,11 +142,10 @@ function EmployeeSchedulePage() {
                         const relativeTag = getRelativeDayTag(day)
 
                         return (
-                            <div key={day.toISOString()} className="panel">
+                            <div key={day.toISOString()} className="panel overflow-hidden">
                                 <div
-                                    className={`flex items-baseline justify-between border-b border-border px-4 py-3 ${
-                                        isToday ? "bg-accent-soft" : ""
-                                    }`}
+                                    className={`flex items-baseline justify-between border-b border-border px-4 py-3 ${isToday ? "bg-accent-soft" : ""
+                                        }`}
                                 >
                                     <div className="flex items-baseline gap-2">
                                         <p className="text-sm font-semibold text-text">
@@ -155,11 +153,10 @@ function EmployeeSchedulePage() {
                                         </p>
                                         {relativeTag && (
                                             <span
-                                                className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${
-                                                    isToday
+                                                className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${isToday
                                                         ? "bg-accent text-white"
                                                         : "bg-surface-2 text-text-muted"
-                                                }`}
+                                                    }`}
                                             >
                                                 {relativeTag}
                                             </span>
@@ -171,25 +168,25 @@ function EmployeeSchedulePage() {
                                 </div>
 
                                 {dayShifts.length === 0 ? (
-                                    <p className="px-4 py-4 text-sm text-text-muted">No shift</p>
+                                    <p className="px-4 py-5 text-sm text-text-muted">No shift</p>
                                 ) : (
-                                    <div className="divide-y divide-border">
+                                    <div className="divide-y divide-border bg-surface-2">
                                         {dayShifts.map((shift) => (
                                             <div
                                                 key={shift.id}
-                                                className="flex items-baseline justify-between gap-3 px-4 py-3"
+                                                className="flex items-center justify-between gap-3 px-4 py-4"
                                             >
-                                                <p className="truncate text-sm text-text">
-                                                    {positionName(shift.positionId)}
-                                                </p>
-                                                <div className="shrink-0 text-right">
-                                                    <p className="data text-sm text-text">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-lg font-semibold text-text">
+                                                        {positionName(shift.positionId)}
+                                                    </p>
+                                                    <p className="data mt-0.5 text-sm text-text-muted">
                                                         {formatTime(shift.startTime)} – {formatTime(shift.endTime)}
                                                     </p>
-                                                    <p className="data mt-0.5 text-xs text-text-muted">
-                                                        {hoursBetween(shift.startTime, shift.endTime).toFixed(1)} h
-                                                    </p>
                                                 </div>
+                                                <p className="data shrink-0 text-sm text-accent">
+                                                    {hoursBetween(shift.startTime, shift.endTime).toFixed(1)} h
+                                                </p>
                                             </div>
                                         ))}
                                     </div>
