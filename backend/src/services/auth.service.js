@@ -28,16 +28,21 @@ const signup = async ({ name, email, password }) => {
 
 const login = async ({ email, password }) => {
     const user = await prisma.user.findUnique({ where: { email } })
+
+    if (!user) {
+        throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS")
+    }
+
     const passwordMatches = await bcrypt.compare(password, user.passwordHash)
 
-    if (!user || !passwordMatches) {
-        throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS");
+    if (!passwordMatches) {
+        throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS")
     }
 
     const token = jwt.sign(
         { userId: user.id },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN, }
+        { expiresIn: process.env.JWT_EXPIRES_IN }
     )
 
     return {
@@ -48,8 +53,6 @@ const login = async ({ email, password }) => {
             email: user.email,
         },
     }
-
-
 }
 
 const getMe = async (userId) => {
