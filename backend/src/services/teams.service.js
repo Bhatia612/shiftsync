@@ -53,7 +53,6 @@ const listMembers = async (teamId) => {
     }))
 }
 
-
 const addMember = async ({ teamId, email, role }) => {
     const user = await prisma.user.findUnique({ where: { email } })
 
@@ -61,12 +60,19 @@ const addMember = async ({ teamId, email, role }) => {
         throw new AppError("No user found with that email", 404, "USER_NOT_FOUND")
     }
 
+    const existingMembership = await prisma.membership.findFirst({
+        where: { userId: user.id }
+    })
+
+    if (existingMembership) {
+        throw new AppError("This user already belongs to a team", 409, "ALREADY_ON_TEAM")
+    }
+
     const membership = await prisma.membership.create({
         data: { userId: user.id, teamId, role }
     })
 
     return { userId: membership.userId, teamId: membership.teamId, role: membership.role }
-
 }
 
 
