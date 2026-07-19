@@ -49,3 +49,25 @@ export const getRelativeDayTag = (date) => {
 
 export const hoursBetween = (startIso, endIso) =>
   (new Date(endIso) - new Date(startIso)) / (1000 * 60 * 60)
+
+
+
+export const toDateInputValue = (isoString) => {
+  const d = new Date(isoString)
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${d.getFullYear()}-${month}-${day}`
+}
+
+export const toTimeInputValue = (isoString) => {
+  const d = new Date(isoString)
+  const hours = String(d.getHours()).padStart(2, "0")
+  const minutes = String(d.getMinutes()).padStart(2, "0")
+  return `${hours}:${minutes}`
+}
+
+export const combineDateAndTime = (dateValue, timeValue) => {
+  const [year, month, day] = dateValue.split("-").map(Number)
+  const [hours, minutes] = timeValue.split(":").map(Number)
+  return new Date(year, month - 1, day, hours, minutes).toISOString()
+}
