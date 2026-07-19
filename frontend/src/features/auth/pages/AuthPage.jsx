@@ -36,12 +36,12 @@ function AuthPage() {
     }
   }
 
-  const quickLogin = async (devEmail) => {
+  const quickLogin = async (devEmail, devPass) => {
     setError(null)
     setSubmitting(true)
 
     try {
-      await login({ email: devEmail, password: "password123" })
+      await login({ email: devEmail, password: devPass })
       const me = await getMe()
       setAuth(me.user, me.membership)
       navigate("/")
@@ -146,14 +146,14 @@ function AuthPage() {
             <p className="mb-2 text-xs text-text-muted">Dev shortcuts</p>
             <div className="flex gap-2">
               <button
-                onClick={() => quickLogin("alice@test.com")}
+                onClick={() => quickLogin("diyarayat5@gmail.com", "diyaDiBakery")}
                 disabled={submitting}
                 className="btn btn-secondary flex-1 !py-1.5 text-xs"
               >
                 Manager
               </button>
               <button
-                onClick={() => quickLogin("bob@test.com")}
+                onClick={() => quickLogin("yan001@gmail.com", "Yan001password")}
                 disabled={submitting}
                 className="btn btn-secondary flex-1 !py-1.5 text-xs"
               >
