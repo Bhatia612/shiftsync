@@ -16,10 +16,10 @@ function Navbar() {
 
           {membership?.role === "MANAGER" && (
             <nav className="hidden items-center gap-4 md:flex">
-              <NavLink to="/" className={linkClass} end>
+              <NavLink to="/schedules" className={linkClass} end>
                 Schedule
               </NavLink>
-              <NavLink to="/my-shifts" className={linkClass}>
+              <NavLink to="/" className={linkClass}>
                 My shifts
               </NavLink>
               <NavLink to="/team" className={linkClass}>

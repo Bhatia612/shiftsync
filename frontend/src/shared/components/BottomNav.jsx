@@ -14,7 +14,7 @@ function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-10 border-t border-border bg-bg/95 backdrop-blur md:hidden">
       <div className="flex items-stretch">
-        <NavLink to="/" className={linkClass} end>
+        <NavLink to="/schedules" className={linkClass} end>
           <svg
             className="h-5 w-5"
             viewBox="0 0 24 24"
@@ -28,7 +28,7 @@ function BottomNav() {
           Schedule
         </NavLink>
 
-        <NavLink to="/my-shifts" className={linkClass}>
+        <NavLink to="/" className={linkClass}>
           <svg
             className="h-5 w-5"
             viewBox="0 0 24 24"

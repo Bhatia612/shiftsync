@@ -16,9 +16,7 @@ function Home() {
     return <CreateTeamPage />
   }
 
-  return membership.role === "MANAGER" ? (
-    <ManagerSchedulePage />
-  ) : (
+  return (
     <EmployeeSchedulePage />
   )
 }
@@ -58,12 +56,12 @@ function App() {
         }
       />
       <Route
-        path="/my-shifts"
+        path="/schedules"
         element={
           <ProtectedRoute>
             <ManagerOnly>
               <Layout>
-                <EmployeeSchedulePage />
+                <ManagerSchedulePage />
               </Layout>
             </ManagerOnly>
           </ProtectedRoute>
