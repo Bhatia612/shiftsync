@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import ProtectedRoute from "./shared/components/ProtectedRoute"
 import Navbar from "./shared/components/Navbar"
+import BottomNav from "./shared/components/BottomNav"
 import AuthPage from "./features/auth/pages/AuthPage"
 import CreateTeamPage from "./features/teams/pages/CreateTeamPage"
 import TeamPage from "./features/teams/pages/TeamPage"
@@ -34,9 +35,10 @@ function ManagerOnly({ children }) {
 
 function Layout({ children }) {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-16 md:pb-0">
       <Navbar />
       {children}
+      <BottomNav />
     </div>
   )
 }
@@ -52,6 +54,18 @@ function App() {
             <Layout>
               <Home />
             </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-shifts"
+        element={
+          <ProtectedRoute>
+            <ManagerOnly>
+              <Layout>
+                <EmployeeSchedulePage />
+              </Layout>
+            </ManagerOnly>
           </ProtectedRoute>
         }
       />

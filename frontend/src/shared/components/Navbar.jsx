@@ -1,19 +1,9 @@
-import { NavLink, useNavigate } from "react-router-dom"
+import { NavLink } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { logout as logoutApi } from "../../features/auth/services/authApi"
+import UserMenu from "./UserMenu"
 
 function Navbar() {
-  const { user, membership, setAuth } = useAuth()
-  const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    try {
-      await logoutApi()
-    } finally {
-      setAuth(null, null)
-      navigate("/login")
-    }
-  }
+  const { membership } = useAuth()
 
   const linkClass = ({ isActive }) =>
     `text-sm transition ${isActive ? "text-text" : "text-text-muted hover:text-text"}`
@@ -25,9 +15,12 @@ function Navbar() {
           <span className="text-lg font-bold text-text">ShiftSync</span>
 
           {membership?.role === "MANAGER" && (
-            <nav className="flex items-center gap-4">
+            <nav className="hidden items-center gap-4 md:flex">
               <NavLink to="/" className={linkClass} end>
                 Schedule
+              </NavLink>
+              <NavLink to="/my-shifts" className={linkClass}>
+                My shifts
               </NavLink>
               <NavLink to="/team" className={linkClass}>
                 Team
@@ -36,24 +29,7 @@ function Navbar() {
           )}
         </div>
 
-        {user && (
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="text-sm text-text">{user.name}</p>
-              {membership && (
-                <p className="text-xs text-text-muted">
-                  {membership.role === "MANAGER" ? "Manager" : "Employee"}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="btn btn-secondary !py-1.5 !px-3 text-sm"
-            >
-              Log out
-            </button>
-          </div>
-        )}
+        <UserMenu />
       </div>
     </header>
   )

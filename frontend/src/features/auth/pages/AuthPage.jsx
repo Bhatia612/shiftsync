@@ -153,7 +153,7 @@ function AuthPage() {
                 Manager
               </button>
               <button
-                onClick={() => quickLogin("yan001@gmail.com", "Yan001password")}
+                onClick={() => quickLogin("mohitbhatia612@gmail.com", "mohit001password")}
                 disabled={submitting}
                 className="btn btn-secondary flex-1 !py-1.5 text-xs"
               >
