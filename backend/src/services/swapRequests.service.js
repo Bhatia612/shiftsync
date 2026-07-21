@@ -15,6 +15,21 @@ const TRANSITIONS = {
   },
 };
 
+const SWAP_INCLUDE = {
+  shift: {
+    include: {
+      position: { select: { id: true, name: true } },
+    },
+  },
+  counterShift: {
+    include: {
+      position: { select: { id: true, name: true } },
+    },
+  },
+  initiator: { select: { id: true, name: true, email: true } },
+  target: { select: { id: true, name: true, email: true } },
+};
+
 const assertTransition = (swap, action) => {
   const nextStatus = TRANSITIONS[swap.status]?.[action];
 
@@ -29,9 +44,6 @@ const assertTransition = (swap, action) => {
   return nextStatus;
 };
 
-// Fire-and-forget notification helper: a notification failure must never
-// break the swap operation that already succeeded, and must never make the
-// caller wait. We log failures instead of throwing them.
 const notifySafe = (payload) => {
   notificationsService
     .notify(payload)
@@ -90,7 +102,6 @@ const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }
     },
   });
 
-  // Target learns they have a swap to respond to.
   notifySafe({
     userId: targetUserId,
     type: "SWAP_REQUESTED",
@@ -115,6 +126,7 @@ const list = async ({ userId, role, status }) => {
         shift: { teamId: membership.teamId },
         status: status || "PENDING_MANAGER",
       },
+      include: SWAP_INCLUDE,
       orderBy: { createdAt: "desc" },
     });
   }
@@ -124,6 +136,7 @@ const list = async ({ userId, role, status }) => {
       OR: [{ initiatorUserId: userId }, { targetUserId: userId }],
       ...(status && { status }),
     },
+    include: SWAP_INCLUDE,
     orderBy: { createdAt: "desc" },
   });
 };
@@ -131,7 +144,7 @@ const list = async ({ userId, role, status }) => {
 const getOne = async ({ id, userId }) => {
   const swap = await prisma.swapRequest.findUnique({
     where: { id },
-    include: { shift: true, counterShift: true },
+    include: SWAP_INCLUDE,
   });
 
   if (!swap) {
@@ -179,7 +192,6 @@ const respond = async ({ id, userId, decision }) => {
     },
   });
 
-  // Initiator learns whether the target accepted (now pending manager) or declined.
   notifySafe({
     userId: swap.initiatorUserId,
     type: nextStatus === "PENDING_MANAGER" ? "SWAP_ACCEPTED" : "SWAP_DENIED",
@@ -266,7 +278,6 @@ const approve = async ({ id, userId }) => {
 
   const results = await prisma.$transaction(operations);
 
-  // Both parties learn the swap went through.
   notifySafe({
     userId: swap.initiatorUserId,
     type: "SWAP_APPROVED",
@@ -306,7 +317,6 @@ const deny = async ({ id, userId }) => {
     data: { status: nextStatus, resolvedAt: new Date() },
   });
 
-  // Both parties learn the manager denied it.
   notifySafe({
     userId: swap.initiatorUserId,
     type: "SWAP_DENIED",
@@ -339,7 +349,6 @@ const cancel = async ({ id, userId }) => {
     data: { status: nextStatus, resolvedAt: new Date() },
   });
 
-  // Target learns the initiator withdrew the request.
   notifySafe({
     userId: swap.targetUserId,
     type: "SWAP_CANCELLED",
