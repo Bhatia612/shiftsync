@@ -7,6 +7,7 @@ import CreateTeamPage from "./features/teams/pages/CreateTeamPage"
 import TeamPage from "./features/teams/pages/TeamPage"
 import ManagerSchedulePage from "./features/schedule/pages/ManagerSchedulePage"
 import EmployeeSchedulePage from "./features/schedule/pages/EmployeeSchedulePage"
+import RequestsPage from "./features/requests/pages/RequestsPage"
 import { useAuth } from "./shared/context/AuthContext"
 
 function Home() {
@@ -64,6 +65,16 @@ function App() {
                 <ManagerSchedulePage />
               </Layout>
             </ManagerOnly>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/requests"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <RequestsPage />
+            </Layout>
           </ProtectedRoute>
         }
       />

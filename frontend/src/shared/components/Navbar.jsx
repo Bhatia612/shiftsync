@@ -4,6 +4,7 @@ import UserMenu from "./UserMenu"
 
 function Navbar() {
   const { membership } = useAuth()
+  const isManager = membership?.role === "MANAGER"
 
   const linkClass = ({ isActive }) =>
     `text-sm transition ${isActive ? "text-text" : "text-text-muted hover:text-text"}`
@@ -14,17 +15,24 @@ function Navbar() {
         <div className="flex items-center gap-6">
           <span className="text-lg font-bold text-text">ShiftSync</span>
 
-          {membership?.role === "MANAGER" && (
+          {membership && (
             <nav className="hidden items-center gap-4 md:flex">
-              <NavLink to="/schedules" className={linkClass} end>
-                Schedule
-              </NavLink>
-              <NavLink to="/" className={linkClass}>
+              {isManager && (
+                <NavLink to="/schedules" className={linkClass} end>
+                  Schedule
+                </NavLink>
+              )}
+              <NavLink to="/" className={linkClass} end>
                 My shifts
               </NavLink>
-              <NavLink to="/team" className={linkClass}>
-                Team
+              <NavLink to="/requests" className={linkClass}>
+                Requests
               </NavLink>
+              {isManager && (
+                <NavLink to="/team" className={linkClass}>
+                  Team
+                </NavLink>
+              )}
             </nav>
           )}
         </div>
