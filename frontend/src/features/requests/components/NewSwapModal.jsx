@@ -40,10 +40,34 @@ function NewSwapModal({ onClose }) {
       .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
   }, [shifts, user.id])
 
-  const teammates = useMemo(
-    () => members.filter((m) => m.userId !== user.id),
-    [members, user.id]
+  const selectedShift = useMemo(
+    () => shifts.find((s) => s.id === shiftId) || null,
+    [shifts, shiftId]
   )
+
+  // For the selected shift, work out which teammates already have an overlapping
+  // shift. This mirrors the backend's overlap rule (start < otherEnd && end > otherStart)
+  // purely as UX — the backend is still the real guard when the request is sent.
+  const teammates = useMemo(() => {
+    const others = members.filter((m) => m.userId !== user.id)
+
+    if (!selectedShift) {
+      return others.map((m) => ({ ...m, conflict: false }))
+    }
+
+    const start = new Date(selectedShift.startTime)
+    const end = new Date(selectedShift.endTime)
+
+    return others.map((m) => {
+      const conflict = shifts.some(
+        (s) =>
+          s.assignedUserId === m.userId &&
+          new Date(s.startTime) < end &&
+          new Date(s.endTime) > start
+      )
+      return { ...m, conflict }
+    })
+  }, [members, shifts, selectedShift, user.id])
 
   const mutation = useMutation({
     mutationFn: createSwapRequest,
@@ -64,6 +88,26 @@ function NewSwapModal({ onClose }) {
     }
     setError(null)
     mutation.mutate({ shiftId, targetUserId })
+  }
+
+  // If the picked teammate becomes conflicting after a shift change, clear them.
+  const handleShiftChange = (nextShiftId) => {
+    setShiftId(nextShiftId)
+    setError(null)
+    if (targetUserId) {
+      const next = shifts.find((s) => s.id === nextShiftId)
+      if (next) {
+        const start = new Date(next.startTime)
+        const end = new Date(next.endTime)
+        const stillConflicts = shifts.some(
+          (s) =>
+            s.assignedUserId === targetUserId &&
+            new Date(s.startTime) < end &&
+            new Date(s.endTime) > start
+        )
+        if (stillConflicts) setTargetUserId("")
+      }
+    }
   }
 
   return (
@@ -90,7 +134,7 @@ function NewSwapModal({ onClose }) {
             ) : (
               <select
                 value={shiftId}
-                onChange={(e) => setShiftId(e.target.value)}
+                onChange={(e) => handleShiftChange(e.target.value)}
                 className="input"
               >
                 <option value="">Select a shift</option>
@@ -117,12 +161,15 @@ function NewSwapModal({ onClose }) {
               value={targetUserId}
               onChange={(e) => setTargetUserId(e.target.value)}
               className="input"
-              disabled={teammates.length === 0}
+              disabled={teammates.length === 0 || !shiftId}
             >
-              <option value="">Select a teammate</option>
+              <option value="">
+                {shiftId ? "Select a teammate" : "Pick a shift first"}
+              </option>
               {teammates.map((m) => (
-                <option key={m.userId} value={m.userId}>
+                <option key={m.userId} value={m.userId} disabled={m.conflict}>
                   {m.name}
+                  {m.conflict ? " — already scheduled" : ""}
                 </option>
               ))}
             </select>

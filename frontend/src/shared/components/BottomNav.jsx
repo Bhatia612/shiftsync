@@ -1,16 +1,17 @@
 import { NavLink } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { usePendingCount } from "../../features/requests/hooks/usePendingSwaps"
 
 function BottomNav() {
   const { membership } = useAuth()
+  const pendingCount = usePendingCount()
 
   if (!membership) return null
 
   const isManager = membership.role === "MANAGER"
 
   const linkClass = ({ isActive }) =>
-    `flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.6875rem] transition ${
-      isActive ? "text-accent" : "text-text-muted"
+    `flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.6875rem] transition ${isActive ? "text-accent" : "text-text-muted"
     }`
 
   return (
@@ -46,17 +47,22 @@ function BottomNav() {
           My shifts
         </NavLink>
 
-        <NavLink to="/requests" className={linkClass}>
-          <svg
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-          >
-            <path d="M8 6h10M8 6l-3 3 3 3M16 18H6M16 18l3-3-3-3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Requests
+        <NavLink to="/swap-requests" className={linkClass}>
+          <span className="relative">
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+            >
+              <path d="M8 6h10M8 6l-3 3 3 3M16 18H6M16 18l3-3-3-3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {pendingCount > 0 && (
+              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-accent ring-2 ring-bg" />
+            )}
+          </span>
+          {isManager ? "Proposals" : "Requests"}
         </NavLink>
 
         {isManager && (

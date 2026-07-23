@@ -46,7 +46,7 @@ function EmployeeSchedulePage() {
     })
 
     const positionName = (positionId) =>
-        positions.find((p) => p.id === positionId)?.name || "—"
+        positions.find((p) => p.id === positionId)?.name || "-"
 
     const myShifts = shifts
         .filter((s) => s.assignedUserId === user.id)

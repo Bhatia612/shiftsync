@@ -247,7 +247,7 @@ function TeamPage() {
                 </div>
 
                 <p className="mt-5 text-sm text-text-muted">
-                    The jobs people work — Baker, Production, Breakout, and so on.
+                    The jobs people work - Baker, Production, Breakout, and so on.
                 </p>
 
                 <div className="mt-4 flex gap-2">

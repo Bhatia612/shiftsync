@@ -69,7 +69,7 @@ function App() {
         }
       />
       <Route
-        path="/requests"
+        path="/swap-requests"
         element={
           <ProtectedRoute>
             <Layout>

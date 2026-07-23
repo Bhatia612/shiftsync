@@ -49,7 +49,7 @@ function ManagerSchedulePage() {
     })
 
     const positionName = (positionId) =>
-        positions.find((p) => p.id === positionId)?.name || "—"
+        positions.find((p) => p.id === positionId)?.name || "-"
 
     const shiftsForDay = (day) =>
         shifts

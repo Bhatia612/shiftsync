@@ -1,10 +1,12 @@
 import { NavLink } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { usePendingCount } from "../../features/requests/hooks/usePendingSwaps"
 import UserMenu from "./UserMenu"
 
 function Navbar() {
   const { membership } = useAuth()
   const isManager = membership?.role === "MANAGER"
+  const pendingCount = usePendingCount()
 
   const linkClass = ({ isActive }) =>
     `text-sm transition ${isActive ? "text-text" : "text-text-muted hover:text-text"}`
@@ -25,8 +27,13 @@ function Navbar() {
               <NavLink to="/" className={linkClass} end>
                 My shifts
               </NavLink>
-              <NavLink to="/requests" className={linkClass}>
-                Requests
+              <NavLink to="/swap-requests" className={linkClass}>
+                <span className="relative">
+                  {isManager ? "Proposals" : "Requests"}
+                  {pendingCount > 0 && (
+                    <span className="absolute -right-2.5 -top-0.5 h-2 w-2 rounded-full bg-accent" />
+                  )}
+                </span>
               </NavLink>
               {isManager && (
                 <NavLink to="/team" className={linkClass}>

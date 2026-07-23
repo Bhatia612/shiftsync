@@ -73,6 +73,22 @@ const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }
     throw new AppError("Target user is not on this team", 404, "USER_NOT_FOUND");
   }
 
+  // Block if the target already has a shift overlapping this one — they aren't
+  // a real candidate. Approval re-checks this too, in case schedules change later.
+  const targetConflict = await checkOverlap({
+    userId: targetUserId,
+    startTime: shift.startTime,
+    endTime: shift.endTime,
+  });
+
+  if (targetConflict) {
+    throw new AppError(
+      "That teammate is already scheduled during this shift",
+      409,
+      "SHIFT_OVERLAP"
+    );
+  }
+
   if (counterShiftId) {
     const counterShift = await prisma.shift.findUnique({ where: { id: counterShiftId } });
 
@@ -111,6 +127,7 @@ const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }
   return swapRequest;
 };
 
+
 const list = async ({ userId, role, status }) => {
   if (role === "manager") {
     const membership = await prisma.membership.findFirst({
@@ -124,7 +141,7 @@ const list = async ({ userId, role, status }) => {
     return prisma.swapRequest.findMany({
       where: {
         shift: { teamId: membership.teamId },
-        status: status || "PENDING_MANAGER",
+        ...(status && { status }),
       },
       include: SWAP_INCLUDE,
       orderBy: { createdAt: "desc" },
@@ -332,14 +349,31 @@ const deny = async ({ id, userId }) => {
 };
 
 const cancel = async ({ id, userId }) => {
-  const swap = await prisma.swapRequest.findUnique({ where: { id } });
+  const swap = await prisma.swapRequest.findUnique({
+    where: { id },
+    include: { shift: true },
+  });
 
   if (!swap) {
     throw new AppError("Swap request not found", 404, "SWAP_NOT_FOUND");
   }
 
-  if (swap.initiatorUserId !== userId) {
-    throw new AppError("Only the initiator can cancel this request", 403, "NOT_SWAP_INITIATOR");
+  const isInitiator = swap.initiatorUserId === userId;
+
+  let isManager = false;
+  if (!isInitiator) {
+    const membership = await prisma.membership.findUnique({
+      where: { userId_teamId: { userId, teamId: swap.shift.teamId } },
+    });
+    isManager = membership?.role === "MANAGER";
+  }
+
+  if (!isInitiator && !isManager) {
+    throw new AppError(
+      "Only the initiator or a team manager can cancel this request",
+      403,
+      "NOT_SWAP_INITIATOR"
+    );
   }
 
   const nextStatus = assertTransition(swap, "cancel");
@@ -354,6 +388,14 @@ const cancel = async ({ id, userId }) => {
     type: "SWAP_CANCELLED",
     payload: { swapRequestId: id },
   });
+
+  if (isManager) {
+    notifySafe({
+      userId: swap.initiatorUserId,
+      type: "SWAP_CANCELLED",
+      payload: { swapRequestId: id },
+    });
+  }
 
   return updated;
 };
