@@ -32,6 +32,14 @@ export const formatTime = (isoString) =>
     minute: "2-digit",
   })
 
+export const formatDateTime = (isoString) =>
+  new Date(isoString).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+
 export const sameDay = (a, b) =>
   a.getFullYear() === b.getFullYear() &&
   a.getMonth() === b.getMonth() &&
