@@ -10,31 +10,30 @@ function buildTimeline(swap) {
     events.push({ label: `Requested by ${swap.initiator?.name || "employee"}`, at: swap.createdAt })
   }
 
+  const wasDeclinedByTarget =
+    swap.status === "DENIED" &&
+    swap.respondedAt &&
+    swap.respondedAt === swap.resolvedAt
+
   if (swap.respondedAt) {
     events.push({
-      label:
-        swap.status === "DENIED" && swap.respondedAt === swap.resolvedAt
-          ? `Declined by ${targetName}`
-          : `Accepted by ${targetName}`,
+      label: wasDeclinedByTarget ? `Declined by ${targetName}` : `Accepted by ${targetName}`,
       at: swap.respondedAt,
     })
   }
 
-  if (swap.resolvedAt) {
+  if (swap.resolvedAt && !wasDeclinedByTarget) {
     const label =
       swap.status === "APPROVED"
         ? "Approved by manager"
         : swap.status === "CANCELLED"
           ? "Cancelled"
-          : swap.respondedAt === swap.resolvedAt
-            ? `Declined by ${targetName}`
-            : "Denied by manager"
+          : "Denied by manager"
     events.push({ label, at: swap.resolvedAt })
   }
 
   return events
 }
-
 function SwapRequestCard({ swap, currentUserId, actions, meta }) {
   const [showTimeline, setShowTimeline] = useState(false)
 
@@ -76,7 +75,7 @@ function SwapRequestCard({ swap, currentUserId, actions, meta }) {
       <div className="mt-3 flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           <span className="rounded-md bg-surface-2 px-2 py-1 text-xs text-text-muted">
-            {swap.shift.position?.name || "—"}
+            {swap.shift.position?.name || "-"}
           </span>
           <span className="text-text-muted">{description}</span>
         </div>
