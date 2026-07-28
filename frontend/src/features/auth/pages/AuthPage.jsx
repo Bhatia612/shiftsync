@@ -144,20 +144,27 @@ function AuthPage() {
         {import.meta.env.DEV && (
           <div className="mt-4 border-t border-border pt-4">
             <p className="mb-2 text-xs text-text-muted">Dev shortcuts</p>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => quickLogin("diyarayat5@gmail.com", "diyaDiBakery")}
                 disabled={submitting}
                 className="btn btn-secondary flex-1 !py-1.5 text-xs"
               >
-                Manager
+                DIYA
               </button>
               <button
                 onClick={() => quickLogin("mohitbhatia612@gmail.com", "mohit001password")}
                 disabled={submitting}
                 className="btn btn-secondary flex-1 !py-1.5 text-xs"
               >
-                Employee
+                MOHIT
+              </button>
+              <button
+                onClick={() => quickLogin("yan001@gmail.com", "Yan001password")}
+                disabled={submitting}
+                className="btn btn-secondary flex-1 !py-1.5 text-xs"
+              >
+                YAN
               </button>
             </div>
           </div>

@@ -29,7 +29,6 @@ const createShift = async ({ teamId, positionId, startTime, endTime, assignedUse
         throw new AppError("startTime must be before endTime", 400, "VALIDATION_ERROR")
     }
 
-    // Position must exist and belong to this team.
     const position = await prisma.position.findUnique({ where: { id: positionId } })
 
     if (!position || position.teamId !== teamId) {
@@ -120,7 +119,6 @@ const updateShift = async ({ shiftId, data }) => {
         throw new AppError("startTime must be before endTime", 400, "VALIDATION_ERROR")
     }
 
-    // If the position is being changed, validate the new one belongs to this team.
     if (data.positionId !== undefined) {
         const position = await prisma.position.findUnique({ where: { id: data.positionId } })
 
@@ -159,7 +157,6 @@ const updateShift = async ({ shiftId, data }) => {
         assignedUserId,
     }
 
-    // Only include positionId in the update if it was provided.
     if (data.positionId !== undefined) {
         updateData.positionId = data.positionId
     }

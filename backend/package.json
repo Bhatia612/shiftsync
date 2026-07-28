@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "0.1.0",
-  "description": "ShiftSync API — team scheduling and shift-swap platform",
+  "description": "ShiftSync API - team scheduling and shift-swap platform",
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",

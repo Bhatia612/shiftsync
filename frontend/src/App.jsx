@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import ProtectedRoute from "./shared/components/ProtectedRoute"
 import Navbar from "./shared/components/Navbar"
 import BottomNav from "./shared/components/BottomNav"
+import LandingPage from "./features/landing/pages/LandingPage"
 import AuthPage from "./features/auth/pages/AuthPage"
 import CreateTeamPage from "./features/teams/pages/CreateTeamPage"
 import TeamPage from "./features/teams/pages/TeamPage"
@@ -19,6 +20,28 @@ function Home() {
 
   return (
     <EmployeeSchedulePage />
+  )
+}
+
+function RootRoute() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-text-muted">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LandingPage />
+  }
+
+  return (
+    <Layout>
+      <Home />
+    </Layout>
   )
 }
 
@@ -46,16 +69,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<AuthPage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Home />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<RootRoute />} />
       <Route
         path="/schedules"
         element={

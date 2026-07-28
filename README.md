@@ -106,6 +106,6 @@ Run from `backend/`:
 
 ## Documentation
 
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — how the system fits together and the reasoning behind it
-- [`API_CONTRACT.md`](./API_CONTRACT.md) — full endpoint reference: routes, request/response shapes, and error codes
-- [`ENVIRONMENT.md`](./ENVIRONMENT.md) — environment variables and the Neon two-URL setup explained
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) - how the system fits together and the reasoning behind it
+- [`API_CONTRACT.md`](./API_CONTRACT.md) - full endpoint reference: routes, request/response shapes, and error codes
+- [`ENVIRONMENT.md`](./ENVIRONMENT.md) - environment variables and the Neon two-URL setup explained

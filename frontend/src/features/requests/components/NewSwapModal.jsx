@@ -45,9 +45,7 @@ function NewSwapModal({ onClose }) {
     [shifts, shiftId]
   )
 
-  // For the selected shift, work out which teammates already have an overlapping
-  // shift. This mirrors the backend's overlap rule (start < otherEnd && end > otherStart)
-  // purely as UX — the backend is still the real guard when the request is sent.
+
   const teammates = useMemo(() => {
     const others = members.filter((m) => m.userId !== user.id)
 
@@ -90,7 +88,6 @@ function NewSwapModal({ onClose }) {
     mutation.mutate({ shiftId, targetUserId })
   }
 
-  // If the picked teammate becomes conflicting after a shift change, clear them.
   const handleShiftChange = (nextShiftId) => {
     setShiftId(nextShiftId)
     setError(null)
@@ -169,7 +166,7 @@ function NewSwapModal({ onClose }) {
               {teammates.map((m) => (
                 <option key={m.userId} value={m.userId} disabled={m.conflict}>
                   {m.name}
-                  {m.conflict ? " — already scheduled" : ""}
+                  {m.conflict ? " - already scheduled" : ""}
                 </option>
               ))}
             </select>

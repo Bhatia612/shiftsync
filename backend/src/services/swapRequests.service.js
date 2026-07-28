@@ -73,8 +73,6 @@ const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }
     throw new AppError("Target user is not on this team", 404, "USER_NOT_FOUND");
   }
 
-  // Block if the target already has a shift overlapping this one — they aren't
-  // a real candidate. Approval re-checks this too, in case schedules change later.
   const targetConflict = await checkOverlap({
     userId: targetUserId,
     startTime: shift.startTime,
