@@ -10,17 +10,17 @@ import ManagerSchedulePage from "./features/schedule/pages/ManagerSchedulePage"
 import EmployeeSchedulePage from "./features/schedule/pages/EmployeeSchedulePage"
 import RequestsPage from "./features/requests/pages/RequestsPage"
 import { useAuth } from "./shared/context/AuthContext"
+import { useMode } from "./shared/context/ModeContext"
 
 function Home() {
   const { membership } = useAuth()
+  const { mode } = useMode()
 
   if (!membership) {
     return <CreateTeamPage />
   }
 
-  return (
-    <EmployeeSchedulePage />
-  )
+  return mode === "manager" ? <ManagerSchedulePage /> : <EmployeeSchedulePage />
 }
 
 function RootRoute() {
@@ -45,10 +45,11 @@ function RootRoute() {
   )
 }
 
-function ManagerOnly({ children }) {
+function ManagerModeOnly({ children }) {
   const { membership } = useAuth()
+  const { mode } = useMode()
 
-  if (!membership || membership.role !== "MANAGER") {
+  if (!membership || membership.role !== "MANAGER" || mode !== "manager") {
     return <Navigate to="/" replace />
   }
 
@@ -74,11 +75,11 @@ function App() {
         path="/schedules"
         element={
           <ProtectedRoute>
-            <ManagerOnly>
+            <ManagerModeOnly>
               <Layout>
                 <ManagerSchedulePage />
               </Layout>
-            </ManagerOnly>
+            </ManagerModeOnly>
           </ProtectedRoute>
         }
       />
@@ -96,11 +97,11 @@ function App() {
         path="/team"
         element={
           <ProtectedRoute>
-            <ManagerOnly>
+            <ManagerModeOnly>
               <Layout>
                 <TeamPage />
               </Layout>
-            </ManagerOnly>
+            </ManagerModeOnly>
           </ProtectedRoute>
         }
       />

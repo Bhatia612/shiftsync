@@ -11,14 +11,16 @@ import {
 import SwapRequestCard from "../components/SwapRequestCard"
 import NewSwapModal from "../components/NewSwapModal"
 import { timeAgo } from "../../../shared/utils/date"
+import { useMode } from "../../../shared/context/ModeContext"
 
 const RESOLVED = ["APPROVED", "DENIED", "CANCELLED"]
 
-function RequestsPage() {
-  const { user, membership } = useAuth()
-  const isManager = membership.role === "MANAGER"
 
-  return isManager ? (
+function RequestsPage() {
+  const { user } = useAuth()
+  const { mode } = useMode()
+
+  return mode === "manager" ? (
     <ManagerRequests userId={user.id} />
   ) : (
     <EmployeeRequests userId={user.id} />
@@ -167,7 +169,7 @@ function EmployeeRequests({ userId }) {
 
   const busy = respondMutation.isPending || cancelMutation.isPending
 
-const received = mine.filter(
+  const received = mine.filter(
     (s) => s.targetUserId === userId && !RESOLVED.includes(s.status)
   )
   const sent = mine.filter(
@@ -197,7 +199,7 @@ const received = mine.filter(
           </button>
         }
       >
-{tab === "received" ? (
+        {tab === "received" ? (
           <SwapList
             items={received}
             userId={userId}
@@ -250,10 +252,9 @@ const received = mine.filter(
 
 function RequestsLayout({ title, subtitle, tabs, tab, setTab, error, isLoading, action, children }) {
   const tabClass = (id) =>
-    `relative whitespace-nowrap border-b-2 px-3 py-2.5 text-sm transition ${
-      tab === id
-        ? "border-accent text-text"
-        : "border-transparent text-text-muted hover:text-text"
+    `relative whitespace-nowrap border-b-2 px-3 py-2.5 text-sm transition ${tab === id
+      ? "border-accent text-text"
+      : "border-transparent text-text-muted hover:text-text"
     }`
 
   return (

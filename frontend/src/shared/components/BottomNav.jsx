@@ -1,24 +1,28 @@
 import { NavLink } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { useMode } from "../context/ModeContext"
 import { usePendingCount } from "../../features/requests/hooks/usePendingSwaps"
 
 function BottomNav() {
   const { membership } = useAuth()
+  const { mode, isManager } = useMode()
   const pendingCount = usePendingCount()
 
   if (!membership) return null
 
-  const isManager = membership.role === "MANAGER"
+  const inManagerMode = mode === "manager"
 
   const linkClass = ({ isActive }) =>
-    `flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.6875rem] transition ${isActive ? "text-accent" : "text-text-muted"
+    `flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.6875rem] transition ${
+      isActive ? "text-accent" : "text-text-muted"
     }`
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-10 border-t border-border bg-bg/95 backdrop-blur md:hidden">
       <div className="flex items-stretch">
-        {isManager && (
-          <NavLink to="/schedules" className={linkClass} end>
+
+        {inManagerMode && (
+          <NavLink to="/" className={linkClass} end>
             <svg
               className="h-5 w-5"
               viewBox="0 0 24 24"
@@ -33,19 +37,21 @@ function BottomNav() {
           </NavLink>
         )}
 
-        <NavLink to="/" className={linkClass} end>
-          <svg
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          My shifts
-        </NavLink>
+        {!inManagerMode && (
+          <NavLink to="/" className={linkClass} end>
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            My shifts
+          </NavLink>
+        )}
 
         <NavLink to="/swap-requests" className={linkClass}>
           <span className="relative">
@@ -56,16 +62,22 @@ function BottomNav() {
               stroke="currentColor"
               strokeWidth="1.75"
             >
-              <path d="M8 6h10M8 6l-3 3 3 3M16 18H6M16 18l3-3-3-3" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M8 6h10M8 6l-3 3 3 3M16 18H6M16 18l3-3-3-3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
+
             {pendingCount > 0 && (
               <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-accent ring-2 ring-bg" />
             )}
           </span>
-          {isManager ? "Proposals" : "Requests"}
+
+          {inManagerMode ? "Proposals" : "Requests"}
         </NavLink>
 
-        {isManager && (
+        {inManagerMode && (
           <NavLink to="/team" className={linkClass}>
             <svg
               className="h-5 w-5"
@@ -75,12 +87,19 @@ function BottomNav() {
               strokeWidth="1.75"
             >
               <circle cx="9" cy="8" r="3.25" />
-              <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" strokeLinecap="round" />
-              <path d="M16 11a3 3 0 100-6M17 19c0-2-.7-3.6-1.8-4.6" strokeLinecap="round" />
+              <path
+                d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M16 11a3 3 0 100-6M17 19c0-2-.7-3.6-1.8-4.6"
+                strokeLinecap="round"
+              />
             </svg>
             Team
           </NavLink>
         )}
+
       </div>
     </nav>
   )
