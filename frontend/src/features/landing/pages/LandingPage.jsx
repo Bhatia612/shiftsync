@@ -45,19 +45,21 @@ function SwapFlow() {
     <ol className="mt-14 space-y-0">
       {FLOW_STEPS.map((step, i) => {
         const revealed = active >= i
+        const isCurrent = active === i
         const isFinalLit = step.final && revealed
 
         return (
           <li
             key={step.n}
-            className={`grid grid-cols-[auto_1fr] gap-x-5 border-t border-border py-7 transition-all duration-700 sm:gap-x-8 ${
-              revealed ? "opacity-100" : "opacity-25"
-            } ${i === FLOW_STEPS.length - 1 ? "border-b" : ""}`}
+            className={`grid grid-cols-[auto_1fr] gap-x-5 border-y border-l-[.3rem] border-r-[.3rem] py-7 pl-4 pr-4 transition-all duration-700 sm:gap-x-8 ${revealed ? "opacity-100" : "opacity-25"
+              } ${isCurrent
+                ? "border-l-accent border-r-accent border-t-border border-b-border"
+                : "border-l-transparent border-r-transparent border-t-border border-b-border"
+              } ${i === FLOW_STEPS.length - 1 ? "" : "border-b-transparent"}`}
           >
             <span
-              className={`data text-sm tabular-nums transition-colors duration-700 ${
-                isFinalLit ? "text-accent" : "text-text-muted"
-              }`}
+              className={`data text-sm tabular-nums transition-colors duration-700 ${isFinalLit ? "text-accent" : "text-text-muted"
+                }`}
             >
               {step.n}
             </span>
@@ -69,22 +71,20 @@ function SwapFlow() {
                   <span className="text-text-muted">{step.line}</span>
                 </p>
                 <span
-                  className={`data shrink-0 text-xs uppercase tracking-wider transition-colors duration-700 ${
-                    isFinalLit
+                  className={`data shrink-0 text-xs uppercase tracking-wider transition-colors duration-700 ${isFinalLit
                       ? "text-accent"
                       : revealed
                         ? "text-text"
                         : "text-text-muted"
-                  }`}
+                    }`}
                 >
                   {step.status}
                 </span>
               </div>
 
               <p
-                className={`mt-2 max-w-md text-sm transition-all duration-700 ${
-                  revealed ? "text-text-muted opacity-100" : "opacity-0"
-                }`}
+                className={`mt-2 max-w-md text-sm transition-all duration-700 ${revealed ? "text-text-muted opacity-100" : "opacity-0"
+                  }`}
               >
                 {step.woven}
               </p>
