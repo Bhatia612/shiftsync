@@ -140,6 +140,7 @@ function EmployeeSchedulePage() {
                         const dayShifts = shiftsForDay(day)
                         const isToday = sameDay(day, new Date())
                         const relativeTag = getRelativeDayTag(day)
+                        const isEmpty = dayShifts.length === 0
 
                         return (
                             <div key={day.toISOString()} className="panel overflow-hidden">
@@ -154,8 +155,8 @@ function EmployeeSchedulePage() {
                                         {relativeTag && (
                                             <span
                                                 className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${isToday
-                                                        ? "bg-accent text-white"
-                                                        : "bg-surface-2 text-text-muted"
+                                                    ? "bg-accent text-white"
+                                                    : "bg-surface-2 text-text-muted"
                                                     }`}
                                             >
                                                 {relativeTag}
@@ -167,8 +168,10 @@ function EmployeeSchedulePage() {
                                     </p>
                                 </div>
 
-                                {dayShifts.length === 0 ? (
-                                    <p className="px-4 py-5 text-sm text-text-muted">No shift</p>
+                                {isEmpty ? (
+                                    <div className="m-3 rounded-lg border-3 border-dashed border-border px-4 py-4">
+                                        <p className="text-sm text-text-muted/70">No shift</p>
+                                    </div>
                                 ) : (
                                     <div className="divide-y divide-border bg-surface-2">
                                         {dayShifts.map((shift) => (
