@@ -28,6 +28,7 @@ const SWAP_INCLUDE = {
   },
   initiator: { select: { id: true, name: true, email: true } },
   target: { select: { id: true, name: true, email: true } },
+  resolvedBy: { select: { id: true, name: true, email: true } },
 };
 
 const assertTransition = (swap, action) => {
@@ -287,7 +288,7 @@ const approve = async ({ id, userId }) => {
   operations.push(
     prisma.swapRequest.update({
       where: { id },
-      data: { status: nextStatus, resolvedAt: new Date() },
+      data: { status: nextStatus, resolvedAt: new Date(), resolvedByUserId: userId },
     })
   );
 
@@ -329,7 +330,7 @@ const deny = async ({ id, userId }) => {
 
   const updated = await prisma.swapRequest.update({
     where: { id },
-    data: { status: nextStatus, resolvedAt: new Date() },
+    data: { status: nextStatus, resolvedAt: new Date(), resolvedByUserId: userId },
   });
 
   notifySafe({
@@ -378,7 +379,7 @@ const cancel = async ({ id, userId }) => {
 
   const updated = await prisma.swapRequest.update({
     where: { id },
-    data: { status: nextStatus, resolvedAt: new Date() },
+    data: { status: nextStatus, resolvedAt: new Date(), resolvedByUserId: userId },
   });
 
   notifySafe({

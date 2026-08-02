@@ -41,6 +41,7 @@ model User {
   assignedShifts Shift[]
   initiatedSwaps SwapRequest[]  @relation("Initiator")
   targetedSwaps  SwapRequest[]  @relation("Target")
+  resolvedSwaps  SwapRequest[]  @relation("ResolvedSwaps")
   notifications  Notification[]
 }
 
@@ -100,18 +101,20 @@ model Shift {
 }
 
 model SwapRequest {
-  id              String     @id @default(uuid())
-  initiatorUserId String
-  shiftId         String
-  targetUserId    String
-  counterShiftId  String?
-  status          SwapStatus @default(PENDING_EMPLOYEE)
-  createdAt       DateTime   @default(now())
-  respondedAt     DateTime?
-  resolvedAt      DateTime?
+  id               String     @id @default(uuid())
+  initiatorUserId  String
+  shiftId          String
+  targetUserId     String
+  counterShiftId   String?
+  resolvedByUserId String?
+  status           SwapStatus @default(PENDING_EMPLOYEE)
+  createdAt        DateTime   @default(now())
+  respondedAt      DateTime?
+  resolvedAt       DateTime?
 
   initiator    User   @relation("Initiator", fields: [initiatorUserId], references: [id])
   target       User   @relation("Target", fields: [targetUserId], references: [id])
+  resolvedBy   User?  @relation("ResolvedSwaps", fields: [resolvedByUserId], references: [id])
   shift        Shift  @relation("ShiftRelation", fields: [shiftId], references: [id])
   counterShift Shift? @relation("CounterShiftRelation", fields: [counterShiftId], references: [id])
 }

@@ -5,6 +5,7 @@ import { formatTime, formatDateTime } from "../../../shared/utils/date"
 function buildTimeline(swap) {
   const events = []
   const targetName = swap.target?.name || "teammate"
+  const resolverName = swap.resolvedBy?.name
 
   if (swap.createdAt) {
     events.push({ label: `Requested by ${swap.initiator?.name || "employee"}`, at: swap.createdAt })
@@ -23,17 +24,31 @@ function buildTimeline(swap) {
   }
 
   if (swap.resolvedAt && !wasDeclinedByTarget) {
-    const label =
-      swap.status === "APPROVED"
-        ? "Approved by manager"
-        : swap.status === "CANCELLED"
-          ? "Cancelled"
-          : "Denied by manager"
+    let label
+
+    if (swap.status === "APPROVED") {
+      label = resolverName ? `Approved by ${resolverName} (Manager)` : "Approved by manager"
+    } else if (swap.status === "DENIED") {
+      label = resolverName ? `Denied by ${resolverName} (Manager)` : "Denied by manager"
+    } else if (swap.status === "CANCELLED") {
+      // A cancel can come from the initiator (withdrawing) or a manager (stepping in).
+      // Only tag "(Manager)" when the resolver isn't the initiator.
+      if (resolverName) {
+        const cancelledByManager = swap.resolvedByUserId !== swap.initiatorUserId
+        label = cancelledByManager
+          ? `Cancelled by ${resolverName} (Manager)`
+          : `Cancelled by ${resolverName}`
+      } else {
+        label = "Cancelled"
+      }
+    }
+
     events.push({ label, at: swap.resolvedAt })
   }
 
   return events
 }
+
 function SwapRequestCard({ swap, currentUserId, actions, meta }) {
   const [showTimeline, setShowTimeline] = useState(false)
 
