@@ -2,8 +2,13 @@ import { createContext, useContext, useState, useEffect } from "react"
 
 const ThemeContext = createContext(undefined)
 
+const STORAGE_KEY = "shiftsync-theme"
+
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState("dark")
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return saved === "light" || saved === "dark" ? saved : "dark"
+  })
 
   useEffect(() => {
     const root = document.documentElement
@@ -12,6 +17,7 @@ export const ThemeProvider = ({ children }) => {
     } else {
       root.classList.remove("light")
     }
+    localStorage.setItem(STORAGE_KEY, theme)
   }, [theme])
 
   const toggleTheme = () => {
