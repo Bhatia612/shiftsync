@@ -244,10 +244,15 @@ const respond = async ({ id, userId, decision }) => {
     },
   });
 
+  const target = await prisma.user.findUnique({
+    where: { id: swap.targetUserId },
+    select: { name: true },
+  });
+
   notifySafe({
     userId: swap.initiatorUserId,
     type: nextStatus === "PENDING_MANAGER" ? "SWAP_ACCEPTED" : "SWAP_DENIED",
-    payload: { swapRequestId: id },
+    payload: { swapRequestId: id, byName: target?.name || null },
   });
 
   return updated;
@@ -330,15 +335,20 @@ const approve = async ({ id, userId }) => {
 
   const results = await prisma.$transaction(operations);
 
+  const manager = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
   notifySafe({
     userId: swap.initiatorUserId,
     type: "SWAP_APPROVED",
-    payload: { swapRequestId: id },
+    payload: { swapRequestId: id, byName: manager?.name || null },
   });
   notifySafe({
     userId: swap.targetUserId,
     type: "SWAP_APPROVED",
-    payload: { swapRequestId: id },
+    payload: { swapRequestId: id, byName: manager?.name || null },
   });
 
   return results[results.length - 1];
@@ -369,15 +379,20 @@ const deny = async ({ id, userId }) => {
     data: { status: nextStatus, resolvedAt: new Date(), resolvedByUserId: userId },
   });
 
+  const manager = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
   notifySafe({
     userId: swap.initiatorUserId,
     type: "SWAP_DENIED",
-    payload: { swapRequestId: id },
+    payload: { swapRequestId: id, byName: manager?.name || null },
   });
   notifySafe({
     userId: swap.targetUserId,
     type: "SWAP_DENIED",
-    payload: { swapRequestId: id },
+    payload: { swapRequestId: id, byName: manager?.name || null },
   });
 
   return updated;
@@ -418,17 +433,22 @@ const cancel = async ({ id, userId }) => {
     data: { status: nextStatus, resolvedAt: new Date(), resolvedByUserId: userId },
   });
 
+  const canceller = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
   notifySafe({
     userId: swap.targetUserId,
     type: "SWAP_CANCELLED",
-    payload: { swapRequestId: id },
+    payload: { swapRequestId: id, byName: canceller?.name || null, byManager: isManager },
   });
 
   if (isManager) {
     notifySafe({
       userId: swap.initiatorUserId,
       type: "SWAP_CANCELLED",
-      payload: { swapRequestId: id },
+      payload: { swapRequestId: id, byName: canceller?.name || null, byManager: isManager },
     });
   }
 

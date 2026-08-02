@@ -13,12 +13,14 @@ const LABELS = {
     SWAP_REQUESTED: (n) => `${n.payload?.fromName || "Someone"} asked you to cover a shift`,
     SWAP_INITIATED: (n) =>
         `${n.payload?.fromName || "Someone"} asked ${n.payload?.toName || "a teammate"} to cover a shift`,
-    SWAP_ACCEPTED: (n) => `${n.payload?.fromName || "Your teammate"} accepted your swap request`,
-    SWAP_DENIED: () => "A swap was declined",
-    SWAP_APPROVED: () => "A swap was approved",
-    SWAP_CANCELLED: () => "A swap was cancelled",
+    SWAP_ACCEPTED: (n) => `${n.payload?.byName || "Your teammate"} accepted your swap request`,
+    SWAP_DENIED: (n) => `${n.payload?.byName || "Your swap"} declined the swap`,
+    SWAP_APPROVED: (n) => `${n.payload?.byName || "A manager"} approved your swap`,
+    SWAP_CANCELLED: (n) =>
+        n.payload?.byManager
+            ? `${n.payload?.byName || "A manager"} cancelled the swap`
+            : `${n.payload?.byName || "Someone"} cancelled the swap`,
 }
-
 const ACTIONABLE = [
     "SWAP_REQUESTED",
     "SWAP_INITIATED",
