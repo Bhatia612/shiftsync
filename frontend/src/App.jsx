@@ -11,6 +11,7 @@ import EmployeeSchedulePage from "./features/schedule/pages/EmployeeSchedulePage
 import RequestsPage from "./features/requests/pages/RequestsPage"
 import { useAuth } from "./shared/context/AuthContext"
 import { useMode } from "./shared/context/ModeContext"
+import NotificationsPage from "./features/notifications/pages/NotificationsPage"
 
 function Home() {
   const { membership } = useAuth()
@@ -102,6 +103,16 @@ function App() {
                 <TeamPage />
               </Layout>
             </ManagerModeOnly>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <NotificationsPage />
+            </Layout>
           </ProtectedRoute>
         }
       />

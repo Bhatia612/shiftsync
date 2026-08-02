@@ -34,12 +34,14 @@ const markAllRead = asyncHandler(async (req, res) => {
 
 const stream = (req, res) => {
     res.setHeader("Content-Type", "text/event-stream")
-    res.setHeader("Cache_Control", "no-cache")
+    res.setHeader("Cache-Control", "no-cache")
     res.setHeader("Connection", "keep-alive")
 
-    res.flushHeader()
+    res.flushHeaders()
 
     res.write(": connected\n\n")
+
+    sseService.addConnection(req.user.id, res)
 
     const heartbeat = setInterval(() => {
         res.write(": heartbeat\n\n")
@@ -49,7 +51,6 @@ const stream = (req, res) => {
         clearInterval(heartbeat)
         sseService.removeConnection(req.user.id, res)
     })
-
 }
 
 

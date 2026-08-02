@@ -23,6 +23,7 @@ enum SwapStatus {
 
 enum NotificationType {
   SWAP_REQUESTED
+  SWAP_INITIATED
   SWAP_ACCEPTED
   SWAP_DENIED
   SWAP_APPROVED

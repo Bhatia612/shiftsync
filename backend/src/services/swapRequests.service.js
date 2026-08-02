@@ -107,7 +107,6 @@ const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }
       );
     }
   }
-
   const swapRequest = await prisma.swapRequest.create({
     data: {
       initiatorUserId,
@@ -117,14 +116,51 @@ const create = async ({ initiatorUserId, shiftId, targetUserId, counterShiftId }
     },
   });
 
+  // Load the initiator's name for notification payloads.
+  const initiator = await prisma.user.findUnique({
+    where: { id: initiatorUserId },
+    select: { name: true },
+  });
+
+  // Target learns they've been asked to cover.
   notifySafe({
     userId: targetUserId,
     type: "SWAP_REQUESTED",
-    payload: { swapRequestId: swapRequest.id, shiftId, fromUserId: initiatorUserId },
+    payload: {
+      swapRequestId: swapRequest.id,
+      shiftId,
+      fromUserId: initiatorUserId,
+      fromName: initiator?.name || null,
+    },
   });
+
+  // Every manager of the team learns a swap is in motion, for visibility.
+  const managers = await prisma.membership.findMany({
+    where: { teamId: shift.teamId, role: "MANAGER" },
+    select: { userId: true },
+  });
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { name: true },
+  });
+
+  for (const manager of managers) {
+    notifySafe({
+      userId: manager.userId,
+      type: "SWAP_INITIATED",
+      payload: {
+        swapRequestId: swapRequest.id,
+        fromUserId: initiatorUserId,
+        fromName: initiator?.name || null,
+        toName: targetUser?.name || null,
+      },
+    });
+  }
 
   return swapRequest;
 };
+
 
 
 const list = async ({ userId, role, status }) => {

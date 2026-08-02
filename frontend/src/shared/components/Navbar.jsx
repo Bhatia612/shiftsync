@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useMode } from "../context/ModeContext"
 import { usePendingCount } from "../../features/requests/hooks/usePendingSwaps"
+import NotificationBell from "../../features/notifications/components/NotificationBell"
 import UserMenu from "./UserMenu"
 
 function Navbar() {
@@ -65,6 +66,8 @@ function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
+          {membership && <NotificationBell />}
+
           {isManager && (
             <button
               onClick={handleModeToggle}
