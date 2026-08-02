@@ -223,7 +223,10 @@ const respond = async ({ id, userId, decision }) => {
     throw new AppError("Decision must be 'accept' or 'decline'", 400, "VALIDATION_ERROR");
   }
 
-  const swap = await prisma.swapRequest.findUnique({ where: { id } });
+  const swap = await prisma.swapRequest.findUnique({
+    where: { id },
+    include: { shift: true },
+  });
 
   if (!swap) {
     throw new AppError("Swap request not found", 404, "SWAP_NOT_FOUND");
@@ -254,6 +257,33 @@ const respond = async ({ id, userId, decision }) => {
     type: nextStatus === "PENDING_MANAGER" ? "SWAP_ACCEPTED" : "SWAP_DENIED",
     payload: { swapRequestId: id, byName: target?.name || null },
   });
+
+  // On acceptance the swap reaches the manager's queue — notify the team's
+  // managers that there's now something awaiting their approval.
+  if (nextStatus === "PENDING_MANAGER") {
+    const initiator = await prisma.user.findUnique({
+      where: { id: swap.initiatorUserId },
+      select: { name: true },
+    });
+
+    const managers = await prisma.membership.findMany({
+      where: { teamId: swap.shift.teamId, role: "MANAGER" },
+      select: { userId: true },
+    });
+
+    for (const manager of managers) {
+      notifySafe({
+        userId: manager.userId,
+        type: "SWAP_ACCEPTED",
+        payload: {
+          swapRequestId: id,
+          byName: target?.name || null,
+          fromName: initiator?.name || null,
+          forManager: true,
+        },
+      });
+    }
+  }
 
   return updated;
 };
