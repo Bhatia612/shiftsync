@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "../../../shared/context/AuthContext"
 import {
@@ -15,6 +16,8 @@ import { useMode } from "../../../shared/context/ModeContext"
 
 const RESOLVED = ["APPROVED", "DENIED", "CANCELLED"]
 
+const MANAGER_TABS = ["queue", "awaiting", "history"]
+const EMPLOYEE_TABS = ["received", "sent", "history"]
 
 function RequestsPage() {
   const { user } = useAuth()
@@ -34,9 +37,15 @@ function useApiError() {
   return { error, setError, apiError }
 }
 
+function useInitialTab(validTabs, fallback) {
+  const [searchParams] = useSearchParams()
+  const requested = searchParams.get("tab")
+  return validTabs.includes(requested) ? requested : fallback
+}
+
 function ManagerRequests({ userId }) {
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState("queue")
+  const [tab, setTab] = useState(useInitialTab(MANAGER_TABS, "queue"))
   const { error, setError, apiError } = useApiError()
 
   const { data: all = [], isLoading } = useQuery({
@@ -140,7 +149,7 @@ function ManagerRequests({ userId }) {
 
 function EmployeeRequests({ userId }) {
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState("received")
+  const [tab, setTab] = useState(useInitialTab(EMPLOYEE_TABS, "received"))
   const [modalOpen, setModalOpen] = useState(false)
   const { error, setError, apiError } = useApiError()
 

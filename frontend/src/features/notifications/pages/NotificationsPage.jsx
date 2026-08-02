@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "../../../shared/context/AuthContext"
+import { useMode } from "../../../shared/context/ModeContext"
 import { useNotifications } from "../hooks/useNotifications"
 import {
     markNotificationRead,
@@ -29,6 +30,7 @@ const ACTIONABLE = [
 
 function NotificationsPage() {
     const { user } = useAuth()
+    const { mode } = useMode()
     const { notifications, unreadCount, isLoading } = useNotifications()
     const queryClient = useQueryClient()
     const navigate = useNavigate()
@@ -51,10 +53,21 @@ function NotificationsPage() {
         },
     })
 
+    const tabForNotification = (type) => {
+        if (mode === "manager") {
+            if (type === "SWAP_INITIATED") return "awaiting"
+            if (type === "SWAP_ACCEPTED") return "queue"
+            return "history"
+        }
+        if (type === "SWAP_REQUESTED") return "received"
+        if (type === "SWAP_ACCEPTED") return "sent"
+        return "history"
+    }
+
     const handleClick = (n) => {
         if (!n.read) readMutation.mutate(n.id)
         if (ACTIONABLE.includes(n.type)) {
-            navigate("/swap-requests")
+            navigate(`/swap-requests?tab=${tabForNotification(n.type)}`)
         }
     }
 
