@@ -148,23 +148,23 @@ function AuthPage() {
               <button
                 onClick={() => quickLogin("diyarayat5@gmail.com", "diyaDiBakery")}
                 disabled={submitting}
-                className="btn btn-secondary flex-1 !py-1.5 text-xs"
+                className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
               >
-                DIYA
+                Manager: DIYA
               </button>
               <button
                 onClick={() => quickLogin("mohitbhatia612@gmail.com", "mohit001password")}
                 disabled={submitting}
-                className="btn btn-secondary flex-1 !py-1.5 text-xs"
+                className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
               >
-                MOHIT
+                Employee 1: MOHIT
               </button>
               <button
-                onClick={() => quickLogin("yan001@gmail.com", "Yan001password")}
+                onClick={() => quickLogin("ramanbhatia00@gmail.com", "raman001password")}
                 disabled={submitting}
-                className="btn btn-secondary flex-1 !py-1.5 text-xs"
+                className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
               >
-                YAN
+                Employee 2: RAMAN
               </button>
             </div>
           </div>
