@@ -5,11 +5,11 @@ const sseService = require("../services/sse.service");
 
 
 const list = asyncHandler(async (req, res) => {
-    const notification = await notificationsService.list({
+    const notifications = await notificationsService.list({
         userId: req.user.id,
         unread: req.query.unread
     })
-    res.status(200).json({ notification })
+    res.status(200).json({ notifications })
 })
 
 
