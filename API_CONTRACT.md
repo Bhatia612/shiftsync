@@ -10,6 +10,8 @@ Auth is a session cookie. When you log in, the server sets an httpOnly cookie ca
 
 Everyone on a team is either a `MANAGER` or an `EMPLOYEE`, and that role is per-team - it lives on your membership, not on your account. For now, each person is on one team.
 
+Roles are an API concern. The frontend also has a separate "mode" (a manager can view the app as an employee or as a manager), but that's a client-side view toggle - it doesn't change what the API allows. The API always enforces permissions from the membership role.
+
 ## When something goes wrong
 
 Every error comes back in the same shape:
@@ -278,7 +280,7 @@ A swap request is someone asking a teammate to take one of their shifts. It move
 | PENDING_MANAGER | teammate agreed, waiting on the manager |
 | APPROVED | manager signed off, shift reassigned |
 | DENIED | teammate or manager said no |
-| CANCELLED | the requester pulled it back |
+| CANCELLED | the request was pulled back |
 
 **Who can move it where:**
 
@@ -286,13 +288,13 @@ A swap request is someone asking a teammate to take one of their shifts. It move
 |------|--------|-----|-----|
 | PENDING_EMPLOYEE | accept | the teammate | PENDING_MANAGER |
 | PENDING_EMPLOYEE | decline | the teammate | DENIED |
-| PENDING_EMPLOYEE | cancel | the requester | CANCELLED |
+| PENDING_EMPLOYEE | cancel | the requester or a team manager | CANCELLED |
 | PENDING_MANAGER | approve | the manager | APPROVED |
 | PENDING_MANAGER | deny | the manager | DENIED |
 
 Any move that isn't in this table comes back as `409 INVALID_TRANSITION`. The shift only actually changes hands on approval - that happens in one transaction, and the overlap check runs again at that moment in case things shifted while the request was sitting.
 
-**What a request looks like** (list and detail endpoints include the related shift, position, and people):
+**What a request looks like** (list and detail endpoints include the related shift, position, people, and resolver):
 
 ```json
 {
@@ -301,6 +303,7 @@ Any move that isn't in this table comes back as `409 INVALID_TRANSITION`. The sh
   "shiftId": "string",
   "targetUserId": "string",
   "counterShiftId": "string | null",
+  "resolvedByUserId": "string | null",
   "status": "PENDING_EMPLOYEE | PENDING_MANAGER | APPROVED | DENIED | CANCELLED",
   "createdAt": "datetime",
   "respondedAt": "datetime | null",
@@ -318,28 +321,29 @@ Any move that isn't in this table comes back as `409 INVALID_TRANSITION`. The sh
     "position": { "id": "string", "name": "string" }
   },
   "initiator": { "id": "string", "name": "string", "email": "string" },
-  "target": { "id": "string", "name": "string", "email": "string" }
+  "target": { "id": "string", "name": "string", "email": "string" },
+  "resolvedBy": { "id": "string", "name": "string", "email": "string" }
 }
 ```
 
-`counterShift` is `null` unless it's a two-way trade. The action endpoints below (`respond`, `approve`, `deny`, `cancel`) return the plain request without these extra pieces.
+`counterShift` is `null` unless it's a two-way trade. `resolvedBy` is `null` until the swap reaches a final state (approved, denied, or cancelled) - then it's whoever resolved it. The action endpoints below (`respond`, `approve`, `deny`, `cancel`) return the plain request without these extra pieces.
 
 ---
 
 ### POST /swap-requests
 
-Ask a teammate to take your shift. You have to be assigned to the shift you're offering. If you set `counterShiftId`, that shift has to belong to the person you're asking.
+Ask a teammate to take your shift. You have to be assigned to the shift you're offering. The teammate can't already be scheduled during that shift. If you set `counterShiftId`, that shift has to belong to the person you're asking.
 
 **Auth:** required
 **Body:** `{ "shiftId": string, "targetUserId": string, "counterShiftId": string | null }`
 
-Returns the new request in `PENDING_EMPLOYEE`. **Errors:** `400 VALIDATION_ERROR` (asking yourself, or a counter-shift that isn't theirs) · `403 NOT_SHIFT_OWNER` · `404` (shift or person not found).
+Returns the new request in `PENDING_EMPLOYEE`. **Errors:** `400 VALIDATION_ERROR` (asking yourself, or a counter-shift that isn't theirs) · `403 NOT_SHIFT_OWNER` · `404` (shift or person not found) · `409 SHIFT_OVERLAP` (the teammate is already scheduled during this shift).
 
 ---
 
 ### GET /swap-requests?status=&role=
 
-List swap requests. Normally you see any request you're part of - as the asker or the person being asked. Managers can add `role=manager` to see their team's queue waiting for approval instead. Either view can be filtered by `status`.
+List swap requests. Normally you see any request you're part of - as the asker or the person being asked. Managers can add `role=manager` to see their team's swaps instead (all statuses when no `status` is given, so the client can split them into a queue and a history). Either view can be filtered by `status`.
 
 **Auth:** required
 
@@ -390,11 +394,11 @@ Moves to `DENIED`. **Errors:** `403 NOT_TEAM_MANAGER` · `409 INVALID_TRANSITION
 
 ### PATCH /swap-requests/:id/cancel
 
-The requester takes it back before anyone acts on it.
+Pull a pending request back. The requester can cancel their own request; a team manager can also cancel one that's still awaiting the teammate.
 
-**Auth:** required, must be the requester
+**Auth:** required, must be the requester or a manager of the team
 
-Moves to `CANCELLED`. **Errors:** `403 NOT_SWAP_INITIATOR` · `409 INVALID_TRANSITION`.
+Moves to `CANCELLED`. **Errors:** `403 NOT_SWAP_INITIATOR` (not the requester and not a team manager) · `409 INVALID_TRANSITION`.
 
 ---
 
@@ -402,18 +406,31 @@ Moves to `CANCELLED`. **Errors:** `403 NOT_SWAP_INITIATOR` · `409 INVALID_TRANS
 
 Notifications are saved as they happen and also pushed live over a stream (see the last endpoint). You only ever see your own.
 
+**Types, and who gets them:**
+
+| Type | Sent to | When |
+|------|---------|------|
+| SWAP_REQUESTED | the target | someone asks them to cover a shift |
+| SWAP_INITIATED | the team's managers | a swap is created, for awareness |
+| SWAP_ACCEPTED | the initiator, and the managers | the target accepts (managers learn it's ready to approve) |
+| SWAP_DENIED | the initiator and target | the target declines, or a manager denies |
+| SWAP_APPROVED | the initiator and target | a manager approves |
+| SWAP_CANCELLED | the target (and the initiator, if a manager cancelled) | the request is pulled back |
+
 **What one looks like:**
 
 ```json
 {
   "id": "string",
   "userId": "string",
-  "type": "SWAP_REQUESTED | SWAP_ACCEPTED | SWAP_DENIED | SWAP_APPROVED | SWAP_CANCELLED",
+  "type": "SWAP_REQUESTED | SWAP_INITIATED | SWAP_ACCEPTED | SWAP_DENIED | SWAP_APPROVED | SWAP_CANCELLED",
   "payload": {},
   "read": false,
   "createdAt": "datetime"
 }
 ```
+
+The `payload` carries context for the notification - always the `swapRequestId`, plus the names of the people involved (for example `fromName`, `toName`, or `byName`) so the client can show a readable message without extra lookups.
 
 ### GET /notifications?unread=
 
@@ -431,7 +448,7 @@ Mark one as read.
 
 **Auth:** required, must be yours
 
-Returns `{ "notification": { "id": "string", "read": true } }`. **Errors:** `403` · `404`.
+Returns `{ "notification": { ... } }`. **Errors:** `403` · `404`.
 
 ---
 
@@ -441,12 +458,12 @@ Mark everything read at once.
 
 **Auth:** required
 
-Returns `{ "updated": 0 }` - the count that changed.
+Returns the number updated.
 
 ---
 
 ### GET /notifications/stream
 
-Open a live stream (Server-Sent Events). The server pushes each new notification down this connection as it happens, for as long as you stay connected.
+Open a live stream (Server-Sent Events). The server pushes each new notification down this connection as a `data:` line containing the notification JSON, for as long as you stay connected.
 
-**Auth:** required
+**Auth:** required (via the session cookie)
