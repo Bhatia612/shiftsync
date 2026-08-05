@@ -5,14 +5,14 @@ const FLOW_STEPS = [
   {
     n: "01",
     actor: "Alice",
-    line: "can't make Saturday, so she asks Bob to cover 9–5.",
+    line: "can't make Saturday, so she asks Bob to cover 9 - 5.",
     woven: "Everyone sees only their own shifts and requests.",
     status: "Requested",
   },
   {
     n: "02",
     actor: "Bob",
-    line: "is free, and says yes — pending the manager's call.",
+    line: "is free, and says yes - pending the manager's call.",
     woven: "Checked for clashes before it's even sent. No double-booking.",
     status: "Accepted",
   },
@@ -20,7 +20,7 @@ const FLOW_STEPS = [
     n: "03",
     actor: "The manager",
     line: "approves. Only now does the schedule actually change.",
-    woven: "Every step is logged — who asked, who agreed, when.",
+    woven: "Every step is logged - who asked, who agreed, when.",
     status: "Approved",
     final: true,
   },
@@ -105,7 +105,7 @@ function LandingPage() {
         <span className="text-base font-bold tracking-tight text-text">ShiftSync</span>
         <button
           onClick={() => navigate("/login")}
-          className="text-sm text-text-muted transition hover:text-text"
+          className="text-sm text-accent font-bold cursor-pointer transition hover:text-text"
         >
           Sign in
         </button>
@@ -121,7 +121,7 @@ function LandingPage() {
             <span className="text-text-muted">everyone agrees.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-text-muted">
-            A swap moves through the right people in the right order — the employee finds
+            A swap moves through the right people in the right order, the employee finds
             cover, the teammate agrees, the manager decides. Watch one go through.
           </p>
 
@@ -135,7 +135,7 @@ function LandingPage() {
               Get started
             </button>
             <span className="text-sm text-text-muted">
-              Free to try — no setup, no card.
+              Free to try - no setup, no card.
             </span>
           </div>
         </section>

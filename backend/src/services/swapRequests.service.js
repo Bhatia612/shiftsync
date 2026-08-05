@@ -258,7 +258,7 @@ const respond = async ({ id, userId, decision }) => {
     payload: { swapRequestId: id, byName: target?.name || null },
   });
 
-  // On acceptance the swap reaches the manager's queue — notify the team's
+  // On acceptance the swap reaches the manager's queue - notify the team's
   // managers that there's now something awaiting their approval.
   if (nextStatus === "PENDING_MANAGER") {
     const initiator = await prisma.user.findUnique({

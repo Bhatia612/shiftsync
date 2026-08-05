@@ -60,115 +60,154 @@ function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="panel w-full max-w-sm p-7">
-        <h1 className="text-2xl font-bold text-text">ShiftSync</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          {mode === "login"
-            ? "Sign in to see your schedule."
-            : "Create an account to get started."}
-        </p>
+    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+      <div
+        className={`flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl md:flex-row ${mode === "signup" ? "md:flex-row-reverse" : ""
+          }`}
+      >
 
-        <div className="mt-7 space-y-4">
-          {mode === "signup" && (
+        <div className="flex flex-col justify-center gap-2 px-6 py-6 text-center md:w-1/2 md:px-10 md:py-14 md:text-left">
+          <p className="data text-xs uppercase tracking-[0.2em] text-accent">
+            ShiftSync
+          </p>
+          {mode === "login" ? (
+            <>
+              <h2 className="text-xl font-bold text-text md:text-3xl">
+                Welcome back.
+              </h2>
+              <p className="text-sm text-text-muted md:text-base">
+                Your team's schedule is right where you left it.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-bold text-text md:text-3xl">
+                Get in sync.
+              </h2>
+              <p className="text-sm text-text-muted md:text-base">
+                Set up your account and bring your team's shifts together.
+              </p>
+            </>
+          )}
+          <div className="mt-4 border-t border-border pt-3 text-left">
+            <button
+              onClick={() => {
+                setMode(mode === "login" ? "signup" : "login")
+                setError(null)
+              }}
+              className="text-text-muted transition hover:text-text cursor-pointer"
+            >
+              {mode === "login" ? (
+                <>
+                  Don't have an account? <span className="text-accent font-bold">Sign up</span>
+                </>
+              ) : (
+                <>
+                  Already have an account? <span className="text-accent font-bold">Sign in</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+
+        <div className="panel w-full rounded-none p-7 md:w-1/2 md:p-10">
+          <h1 className="text-2xl font-bold text-text">
+            {mode === "login" ? "Sign in" : "Create account"}
+          </h1>
+          <p className="mt-1 text-sm text-text-muted">
+            {mode === "login"
+              ? "Sign in to see your schedule."
+              : "Create an account to get started."}
+          </p>
+
+          <div className="mt-7 space-y-4">
+            {mode === "signup" && (
+              <div>
+                <label className="label">Name</label>
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="input"
+                />
+              </div>
+            )}
+
             <div>
-              <label className="label">Name</label>
+              <label className="label">Email</label>
               <input
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="input"
               />
             </div>
-          )}
 
-          <div>
-            <label className="label">Email</label>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="input"
-            />
+            <div>
+              <label className="label">Password</label>
+              <input
+                type="password"
+                placeholder="At least 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="input"
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-lg border border-border bg-danger-soft px-3 py-2">
+                <p className="text-sm text-danger">{error}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="btn btn-primary w-full"
+            >
+              {submitting
+                ? "Please wait..."
+                : mode === "login"
+                  ? "Sign in"
+                  : "Create account"}
+            </button>
           </div>
 
-          <div>
-            <label className="label">Password</label>
-            <input
-              type="password"
-              placeholder="At least 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="input"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded-lg border border-border bg-danger-soft px-3 py-2">
-              <p className="text-sm text-danger">{error}</p>
+          {import.meta.env.DEV && mode === "login" && (
+            <div className="mt-4 border-t border-border pt-4">
+              <p className="mb-2 text-xs text-text-muted">Dev shortcuts</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => quickLogin("diyarayat5@gmail.com", "diyaDiBakery")}
+                  disabled={submitting}
+                  className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
+                >
+                  Manager: DIYA
+                </button>
+                <button
+                  onClick={() => quickLogin("mohitbhatia612@gmail.com", "mohit001password")}
+                  disabled={submitting}
+                  className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
+                >
+                  Employee 1: MOHIT
+                </button>
+                <button
+                  onClick={() => quickLogin("ramanbhatia00@gmail.com", "raman001password")}
+                  disabled={submitting}
+                  className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
+                >
+                  Employee 2: RAMAN
+                </button>
+              </div>
             </div>
           )}
-
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="btn btn-primary w-full"
-          >
-            {submitting
-              ? "Please wait..."
-              : mode === "login"
-                ? "Sign in"
-                : "Create account"}
-          </button>
         </div>
-
-        <div className="mt-6 border-t border-border pt-5 text-center">
-          <button
-            onClick={() => {
-              setMode(mode === "login" ? "signup" : "login")
-              setError(null)
-            }}
-            className="text-sm text-text-muted transition hover:text-text"
-          >
-            {mode === "login"
-              ? "Don't have an account? Sign up"
-              : "Already have an account? Sign in"}
-          </button>
-        </div>
-
-        {import.meta.env.DEV && (
-          <div className="mt-4 border-t border-border pt-4">
-            <p className="mb-2 text-xs text-text-muted">Dev shortcuts</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => quickLogin("diyarayat5@gmail.com", "diyaDiBakery")}
-                disabled={submitting}
-                className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
-              >
-                Manager: DIYA
-              </button>
-              <button
-                onClick={() => quickLogin("mohitbhatia612@gmail.com", "mohit001password")}
-                disabled={submitting}
-                className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
-              >
-                Employee 1: MOHIT
-              </button>
-              <button
-                onClick={() => quickLogin("ramanbhatia00@gmail.com", "raman001password")}
-                disabled={submitting}
-                className="btn btn-secondary flex-1 !py-3 text-[.9rem]"
-              >
-                Employee 2: RAMAN
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

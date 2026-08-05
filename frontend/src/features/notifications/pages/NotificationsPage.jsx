@@ -15,7 +15,7 @@ const LABELS = {
         `${n.payload?.fromName || "Someone"} asked ${n.payload?.toName || "a teammate"} to cover a shift`,
     SWAP_ACCEPTED: (n) =>
         n.payload?.forManager
-            ? `${n.payload?.byName || "A teammate"} accepted ${n.payload?.fromName || "a"}'s swap — ready for approval`
+            ? `${n.payload?.byName || "A teammate"} accepted ${n.payload?.fromName || "a"}'s swap - ready for approval`
             : `${n.payload?.byName || "Your teammate"} accepted your swap request`,
     SWAP_DENIED: (n) => `${n.payload?.byName || "Your swap"} declined the swap`,
     SWAP_APPROVED: (n) => `${n.payload?.byName || "A manager"} approved your swap`,
