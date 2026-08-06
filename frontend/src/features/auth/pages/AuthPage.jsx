@@ -82,7 +82,7 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen flex-col justify-between px-4 py-6 md:items-center md:justify-center md:py-8">
       <div
-        className={`flex w-full max-w-4xl flex-1 flex-col overflow-hidden rounded-2xl md:flex-row ${mode === "signup" ? "md:flex-row-reverse" : ""
+        className={`flex w-full max-w-4xl flex-1 flex-col overflow-hidden rounded-2xl md:flex-none md:flex-row ${mode === "signup" ? "md:flex-row-reverse" : ""
           }`}
       >
 
