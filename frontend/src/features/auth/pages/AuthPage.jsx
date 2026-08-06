@@ -59,14 +59,34 @@ function AuthPage() {
     }
   }
 
+  const toggle = (
+    <button
+      onClick={() => {
+        setMode(mode === "login" ? "signup" : "login")
+        setError(null)
+      }}
+      className="text-xs transition hover:text-text cursor-pointer text-text-muted md:text-sm"
+    >
+      {mode === "login" ? (
+        <>
+          Don't have an account? <span className="text-accent font-bold">Sign up</span>
+        </>
+      ) : (
+        <>
+          Already have an account? <span className="text-accent font-bold">Sign in</span>
+        </>
+      )}
+    </button>
+  )
+
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+    <div className="flex min-h-screen flex-col justify-between px-4 py-6 md:items-center md:justify-center md:py-8">
       <div
-        className={`flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl md:flex-row ${mode === "signup" ? "md:flex-row-reverse" : ""
+        className={`flex w-full max-w-4xl flex-1 flex-col overflow-hidden rounded-2xl md:flex-row ${mode === "signup" ? "md:flex-row-reverse" : ""
           }`}
       >
 
-        <div className="flex flex-col justify-center gap-2 px-6 py-6 text-center md:w-1/2 md:px-10 md:py-14 md:text-left">
+        <div className="flex flex-col justify-center gap-2 px-2 py-6 text-left md:w-1/2 md:px-10 md:py-14">
           <p className="data text-xs uppercase tracking-[0.2em] text-accent">
             ShiftSync
           </p>
@@ -89,29 +109,13 @@ function AuthPage() {
               </p>
             </>
           )}
-          <div className="mt-4 border-t border-border pt-3 text-left">
-            <button
-              onClick={() => {
-                setMode(mode === "login" ? "signup" : "login")
-                setError(null)
-              }}
-              className="text-text-muted transition hover:text-text cursor-pointer"
-            >
-              {mode === "login" ? (
-                <>
-                  Don't have an account? <span className="text-accent font-bold">Sign up</span>
-                </>
-              ) : (
-                <>
-                  Already have an account? <span className="text-accent font-bold">Sign in</span>
-                </>
-              )}
-            </button>
+          <div className="mt-4 hidden border-t border-border pt-3 text-left md:block">
+            {toggle}
           </div>
         </div>
 
 
-        <div className="panel w-full rounded-none p-7 md:w-1/2 md:p-10">
+        <div className="panel w-full rounded-2xl p-6 md:w-1/2 md:rounded-none md:p-10">
           <h1 className="text-2xl font-bold text-text">
             {mode === "login" ? "Sign in" : "Create account"}
           </h1>
@@ -121,7 +125,7 @@ function AuthPage() {
               : "Create an account to get started."}
           </p>
 
-          <div className="mt-7 space-y-4">
+          <div className="mt-6 space-y-4 md:mt-7">
             {mode === "signup" && (
               <div>
                 <label className="label">Name</label>
@@ -207,6 +211,10 @@ function AuthPage() {
               </div>
             </div>
           )}
+
+          <div className="mt-6 border-t border-border pt-4 text-left md:hidden">
+            {toggle}
+          </div>
         </div>
       </div>
     </div>
