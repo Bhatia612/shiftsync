@@ -12,6 +12,7 @@ import RequestsPage from "./features/requests/pages/RequestsPage"
 import { useAuth } from "./shared/context/AuthContext"
 import { useMode } from "./shared/context/ModeContext"
 import NotificationsPage from "./features/notifications/pages/NotificationsPage"
+import LoadingScreen from "./shared/components/LoadingScreen"
 
 function Home() {
   const { membership } = useAuth()
@@ -28,11 +29,7 @@ function RootRoute() {
   const { user, isLoading } = useAuth()
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-text-muted">Loading...</p>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (!user) {
