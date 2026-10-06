@@ -20,7 +20,8 @@ function LoadingScreen() {
           showWakingMessage ? "opacity-100" : "opacity-0"
         }`}
       >
-        Waking up the server — the first visit can take a moment.
+        Waking up the server... ShiftSync may take a moment to start after being
+        idle. Once it's ready, you'll be taken to the app automatically.
       </p>
     </div>
   )
